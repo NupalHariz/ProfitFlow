@@ -16,6 +16,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+        $middleware->trimStrings(except: [
+            'default_selling_price',
+            'default_production_cost',
+        ]);
 
         $middleware->web(append: [
             HandleAppearance::class,

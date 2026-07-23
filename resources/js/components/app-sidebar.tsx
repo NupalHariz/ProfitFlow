@@ -3,11 +3,13 @@ import {
     BookOpen,
     FolderGit2,
     LayoutGrid,
+    Package,
     PercentCircle,
     ReceiptText,
     Tags,
 } from 'lucide-react';
 import ProductCategoryController from '@/actions/App/Http/Controllers/ProductCategories/ProductCategoryController';
+import ProductController from '@/actions/App/Http/Controllers/Products/ProductController';
 import ProfitSchemeController from '@/actions/App/Http/Controllers/ProfitSchemes/ProfitSchemeController';
 import TransactionController from '@/actions/App/Http/Controllers/Transactions/TransactionController';
 import AppLogo from '@/components/app-logo';
@@ -36,6 +38,11 @@ const mainNavItems: NavItem[] = [
         title: 'Product Categories',
         href: ProductCategoryController.index(),
         icon: Tags,
+    },
+    {
+        title: 'Products',
+        href: ProductController.index(),
+        icon: Package,
     },
     {
         title: 'Profit Schemes',

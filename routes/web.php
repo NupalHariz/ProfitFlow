@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProductCategories\ProductCategoryController;
+use App\Http\Controllers\Products\ProductController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemeAllocationController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemeController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemePublicationController;
@@ -37,6 +38,33 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::delete(
                 '{productCategory}',
                 [ProductCategoryController::class, 'destroy']
+            )->name('destroy');
+        });
+
+    Route::prefix('products')
+        ->name('products.')
+        ->group(function (): void {
+            Route::get('/', [ProductController::class, 'index'])
+                ->name('index');
+            Route::get('create', [ProductController::class, 'create'])
+                ->name('create');
+            Route::post('/', [ProductController::class, 'store'])
+                ->name('store');
+            Route::get(
+                '{product}/edit',
+                [ProductController::class, 'edit']
+            )->name('edit');
+            Route::patch(
+                '{product}/status',
+                [ProductController::class, 'updateStatus']
+            )->name('update-status');
+            Route::patch(
+                '{product}',
+                [ProductController::class, 'update']
+            )->name('update');
+            Route::delete(
+                '{product}',
+                [ProductController::class, 'destroy']
             )->name('destroy');
         });
 
