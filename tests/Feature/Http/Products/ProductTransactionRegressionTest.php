@@ -5,9 +5,11 @@ namespace Tests\Feature\Http\Products;
 use App\Actions\Products\UpdateProduct;
 use App\Actions\Transactions\CreateTransaction;
 use App\Models\Customer;
+use App\Models\ProductCategory;
 use App\Models\TransactionItem;
 use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class ProductTransactionRegressionTest extends ProductHttpTestCase
 {
@@ -126,6 +128,97 @@ class ProductTransactionRegressionTest extends ProductHttpTestCase
                 )
                 ->all()
         );
+    }
+
+    #[DataProvider('categoryUnavailableStates')]
+    public function test_product_under_unavailable_category_is_excluded_and_draft_resubmit_is_atomic(
+        string $state
+    ): void {
+        $user = $this->user();
+        $customer = Customer::factory()->create();
+        $category = $this->category();
+        $product = $this->product($category);
+        $transaction = app(CreateTransaction::class)->execute([
+            'customer_id' => $customer->id,
+            'transaction_date' => '2026-07-23',
+            'items' => [[
+                'product_id' => $product->id,
+                'quantity' => 2,
+            ]],
+        ], $user);
+        $beforeTransaction = $transaction->fresh()?->getAttributes();
+        $beforeItems = TransactionItem::query()
+            ->where('transaction_id', $transaction->id)
+            ->get()
+            ->map(fn (TransactionItem $item): array => $item->getAttributes())
+            ->all();
+
+        match ($state) {
+            'inactive' => $category->update(['is_active' => false]),
+            'deleted' => $category->delete(),
+        };
+
+        $this->actingAs($user)
+            ->get(route('transactions.edit', $transaction))
+            ->assertInertia(
+                fn (Assert $page) => $page
+                    ->where(
+                        'transaction.items.0.current_product_available',
+                        false
+                    )
+                    ->where(
+                        'products',
+                        fn (mixed $products): bool => $products
+                            instanceof Collection
+                            && ! $products->pluck('id')->contains(
+                                $product->id
+                            )
+                    )
+            );
+        $this->actingAs($user)
+            ->patch(route('transactions.update', $transaction), [
+                'customer_id' => $customer->id,
+                'transaction_date' => '2026-08-01',
+                'items' => [[
+                    'product_id' => $product->id,
+                    'quantity' => 1,
+                    'unit_selling_price' => null,
+                ]],
+            ])
+            ->assertSessionHasErrors('transaction');
+
+        $this->assertSame(
+            $beforeTransaction,
+            $transaction->fresh()?->getAttributes()
+        );
+        $this->assertSame(
+            $beforeItems,
+            TransactionItem::query()
+                ->where('transaction_id', $transaction->id)
+                ->get()
+                ->map(
+                    fn (TransactionItem $item): array => $item
+                        ->getAttributes()
+                )
+                ->all()
+        );
+        $storedCategory = ProductCategory::withTrashed()
+            ->findOrFail($category->id);
+        $this->assertSame(
+            $state === 'deleted',
+            $storedCategory->trashed()
+        );
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function categoryUnavailableStates(): array
+    {
+        return [
+            'inactive category' => ['inactive'],
+            'deleted category' => ['deleted'],
+        ];
     }
 
     public function test_draft_can_be_resubmitted_with_available_replacement(): void

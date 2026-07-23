@@ -93,9 +93,10 @@ export default function TransactionItemEditor({
                     <div className="flex gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
                         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                         <p>
-                            The stored product is now inactive or deleted.
-                            Select an available product before saving. The
-                            historical snapshot remains visible below.
+                            The stored product or its category is now
+                            unavailable. Select an available product before
+                            saving. The historical snapshot remains visible
+                            below.
                         </p>
                     </div>
                 )}

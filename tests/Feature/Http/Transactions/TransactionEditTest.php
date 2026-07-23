@@ -6,11 +6,13 @@ use App\Actions\Transactions\CreateTransaction;
 use App\Enums\TransactionStatus;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Inertia\Testing\AssertableInertia as Assert;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class TransactionEditTest extends TransactionHttpTestCase
 {
@@ -276,6 +278,81 @@ class TransactionEditTest extends TransactionHttpTestCase
                                 ->contains($product->id)
                     )
             );
+    }
+
+    #[DataProvider('unavailableProductStates')]
+    public function test_draft_edit_flags_product_or_category_unavailability(
+        string $state
+    ): void {
+        $user = $this->user();
+        $customer = Customer::factory()->create();
+        $category = ProductCategory::factory()->create([
+            'name' => 'Original Category',
+        ]);
+        $product = Product::factory()
+            ->for($category, 'category')
+            ->create([
+                'name' => 'Stored Product',
+                'sku' => 'STORED-SKU',
+                'default_selling_price' => '100.00',
+                'default_production_cost' => '60.00',
+                'is_active' => true,
+            ]);
+        $transaction = $this->draft($user, $customer, $product);
+
+        match ($state) {
+            'product_inactive' => $product->update(['is_active' => false]),
+            'product_deleted' => $product->delete(),
+            'category_inactive' => $category->update(['is_active' => false]),
+            'category_deleted' => $category->delete(),
+        };
+
+        $this->actingAs($user)
+            ->get(route('transactions.edit', $transaction))
+            ->assertInertia(
+                fn (Assert $page) => $page
+                    ->where(
+                        'transaction.items.0.product_id',
+                        $product->id
+                    )
+                    ->where(
+                        'transaction.items.0.current_product_available',
+                        false
+                    )
+                    ->where(
+                        'transaction.items.0.snapshot.product_name_snapshot',
+                        'Stored Product'
+                    )
+                    ->where(
+                        'transaction.items.0.snapshot.product_sku_snapshot',
+                        'STORED-SKU'
+                    )
+                    ->where(
+                        'transaction.items.0.snapshot.category_name_snapshot',
+                        'Original Category'
+                    )
+                    ->where(
+                        'products',
+                        fn (mixed $products): bool => $products
+                            instanceof Collection
+                            && ! $products
+                                ->pluck('id')
+                                ->contains($product->id)
+                    )
+            );
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function unavailableProductStates(): array
+    {
+        return [
+            'product inactive' => ['product_inactive'],
+            'product deleted' => ['product_deleted'],
+            'category inactive' => ['category_inactive'],
+            'category deleted' => ['category_deleted'],
+        ];
     }
 
     public function test_update_rejects_protected_header_and_item_fields(): void

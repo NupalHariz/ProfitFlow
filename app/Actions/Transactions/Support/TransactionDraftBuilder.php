@@ -42,6 +42,7 @@ final class TransactionDraftBuilder
         )));
         /** @var Collection<int|string, Product> $products */
         $products = Product::query()
+            ->availableForTransaction()
             ->select([
                 'id',
                 'product_category_id',
@@ -49,10 +50,9 @@ final class TransactionDraftBuilder
                 'sku',
                 'default_selling_price',
                 'default_production_cost',
-                'is_active',
             ])
             ->with([
-                'category:id,name,is_active,deleted_at',
+                'category:id,name',
             ])
             ->whereIn('id', $productIds)
             ->get()
@@ -65,13 +65,7 @@ final class TransactionDraftBuilder
 
             if ($product === null) {
                 throw new InvalidTransactionDraft(
-                    "Transaction item [{$index}] product [{$item['product_id']}] does not exist or has been deleted."
-                );
-            }
-
-            if (! $product->is_active) {
-                throw new InvalidTransactionDraft(
-                    "Transaction item [{$index}] product [{$product->id}] is inactive."
+                    "Transaction item [{$index}] product [{$item['product_id']}] does not exist, has been deleted, is inactive, or its category is unavailable for transaction drafts. Select an available replacement."
                 );
             }
 
@@ -79,13 +73,7 @@ final class TransactionDraftBuilder
 
             if (! $category instanceof ProductCategory) {
                 throw new InvalidTransactionDraft(
-                    "Transaction item [{$index}] product category does not exist or has been deleted."
-                );
-            }
-
-            if (! $category->is_active) {
-                throw new InvalidTransactionDraft(
-                    "Transaction item [{$index}] product category [{$category->id}] is inactive."
+                    "Transaction item [{$index}] product [{$product->id}] category is unavailable for transaction drafts. Select an available replacement."
                 );
             }
 

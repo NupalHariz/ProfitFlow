@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +24,23 @@ class Product extends Model
 {
     /** @use HasFactory<ProductFactory> */
     use HasFactory, SoftDeletes;
+
+    /**
+     * @param  Builder<Product>  $query
+     * @return Builder<Product>
+     */
+    public function scopeAvailableForTransaction(Builder $query): Builder
+    {
+        return $query
+            ->where('is_active', true)
+            ->whereHas(
+                'category',
+                fn (Builder $query) => $query->where(
+                    'is_active',
+                    true
+                )
+            );
+    }
 
     /** @return BelongsTo<ProductCategory, $this> */
     public function category(): BelongsTo

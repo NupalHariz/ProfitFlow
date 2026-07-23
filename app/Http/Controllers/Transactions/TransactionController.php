@@ -857,7 +857,7 @@ final class TransactionController extends Controller
             self::LOOKUP_LIMIT
         );
         /** @var Collection<int, Product> $selected */
-        $selected = $this->activeProductQuery()
+        $selected = $this->transactionProductLookupQuery()
             ->when(
                 $selectedIds !== [],
                 fn ($query) => $query->whereIn('id', $selectedIds),
@@ -866,7 +866,7 @@ final class TransactionController extends Controller
             ->get();
         $remainingLimit = self::LOOKUP_LIMIT - $selected->count();
         /** @var Collection<int, Product> $available */
-        $available = $this->activeProductQuery()
+        $available = $this->transactionProductLookupQuery()
             ->when(
                 $selectedIds !== [],
                 fn ($query) => $query->whereNotIn('id', $selectedIds)
@@ -896,9 +896,10 @@ final class TransactionController extends Controller
     /**
      * @return Builder<Product>
      */
-    private function activeProductQuery(): Builder
+    private function transactionProductLookupQuery(): Builder
     {
         return Product::query()
+            ->availableForTransaction()
             ->select([
                 'id',
                 'product_category_id',
@@ -907,14 +908,6 @@ final class TransactionController extends Controller
                 'default_selling_price',
                 'default_production_cost',
             ])
-            ->where('is_active', true)
-            ->whereHas(
-                'category',
-                fn (Builder $query) => $query->where(
-                    'is_active',
-                    true
-                )
-            )
             ->with([
                 'category' => fn ($query) => $query
                     ->select(['id', 'name']),
@@ -937,7 +930,7 @@ final class TransactionController extends Controller
 
         if (! $category instanceof ProductCategory) {
             throw new LogicException(
-                'Active product category must be loaded.'
+                'Available product category must be loaded.'
             );
         }
 
