@@ -5,7 +5,9 @@ import {
     LayoutGrid,
     PercentCircle,
     ReceiptText,
+    Tags,
 } from 'lucide-react';
+import ProductCategoryController from '@/actions/App/Http/Controllers/ProductCategories/ProductCategoryController';
 import ProfitSchemeController from '@/actions/App/Http/Controllers/ProfitSchemes/ProfitSchemeController';
 import TransactionController from '@/actions/App/Http/Controllers/Transactions/TransactionController';
 import AppLogo from '@/components/app-logo';
@@ -29,6 +31,11 @@ const mainNavItems: NavItem[] = [
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Product Categories',
+        href: ProductCategoryController.index(),
+        icon: Tags,
     },
     {
         title: 'Profit Schemes',

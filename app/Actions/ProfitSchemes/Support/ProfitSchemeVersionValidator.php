@@ -237,7 +237,7 @@ final class ProfitSchemeVersionValidator
 
         if (! is_int($categoryId)
             || $categoryId <= 0
-            || ! ProductCategory::withTrashed()
+            || ! ProductCategory::query()
                 ->whereKey($categoryId)
                 ->exists()) {
             throw new InvalidProfitSchemeVersion(

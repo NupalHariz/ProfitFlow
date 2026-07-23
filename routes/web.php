@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProductCategories\ProductCategoryController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemeAllocationController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemeController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemePublicationController;
@@ -11,6 +12,33 @@ Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+
+    Route::prefix('product-categories')
+        ->name('product-categories.')
+        ->group(function (): void {
+            Route::get('/', [ProductCategoryController::class, 'index'])
+                ->name('index');
+            Route::get('create', [ProductCategoryController::class, 'create'])
+                ->name('create');
+            Route::post('/', [ProductCategoryController::class, 'store'])
+                ->name('store');
+            Route::get(
+                '{productCategory}/edit',
+                [ProductCategoryController::class, 'edit']
+            )->name('edit');
+            Route::patch(
+                '{productCategory}/status',
+                [ProductCategoryController::class, 'updateStatus']
+            )->name('update-status');
+            Route::patch(
+                '{productCategory}',
+                [ProductCategoryController::class, 'update']
+            )->name('update');
+            Route::delete(
+                '{productCategory}',
+                [ProductCategoryController::class, 'destroy']
+            )->name('destroy');
+        });
 
     Route::scopeBindings()
         ->prefix('profit-schemes')
