@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Enums\ProfitRecipientType;
+use Database\Factories\ProfitRecipientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -11,6 +13,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['code', 'type', 'investor_id', 'display_name', 'is_active'])]
 class ProfitRecipient extends Model
 {
+    /** @use HasFactory<ProfitRecipientFactory> */
+    use HasFactory;
+
     /** @return BelongsTo<Investor, $this> */
     public function investor(): BelongsTo
     {

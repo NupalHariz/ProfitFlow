@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Database\Factories\ProfitDistributionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -17,6 +19,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class ProfitDistribution extends Model
 {
+    /** @use HasFactory<ProfitDistributionFactory> */
+    use HasFactory;
+
     public const UPDATED_AT = null;
 
     /** @return BelongsTo<Transaction, $this> */
