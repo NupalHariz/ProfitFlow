@@ -2,10 +2,13 @@
 
 namespace Tests\Feature\Actions\Transactions;
 
+use App\Actions\Transactions\CompleteTransaction;
 use App\Actions\Transactions\CreateTransaction;
 use App\Actions\Transactions\UpdateDraftTransaction;
 use App\Models\Customer;
 use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\ProfitSchemeVersion;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -76,5 +79,45 @@ abstract class TransactionActionTestCase extends TestCase
             $transaction,
             $payload
         );
+    }
+
+    protected function complete(
+        Transaction $transaction,
+        ?User $completer = null
+    ): Transaction {
+        return app(CompleteTransaction::class)->execute(
+            $transaction,
+            $completer ?? $this->creator
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function createPublishedRule(
+        ?ProductCategory $category = null,
+        array $attributes = []
+    ): ProfitSchemeVersion {
+        $scheme = $this->createScheme($this->creator);
+        $version = $this->createSchemeVersion(
+            $scheme,
+            $this->creator,
+            array_merge([
+                'product_category_id' => $category?->id,
+                'minimum_profit' => null,
+                'maximum_profit' => null,
+                'effective_from' => '2026-01-01',
+                'effective_until' => null,
+                'priority' => 0,
+                'is_active' => true,
+                'published_at' => '2026-07-01 00:00:00',
+            ], $attributes)
+        );
+        $this->createAllocation(
+            $version,
+            $this->createCompanyRecipient()
+        );
+
+        return $version;
     }
 }
