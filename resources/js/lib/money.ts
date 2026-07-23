@@ -153,7 +153,7 @@ export function aggregateMoneyPreviews(previews: MoneyPreview[]): MoneyPreview {
     };
 }
 
-function moneyToSignedCents(value: string): bigint | null {
+export function moneyToSignedCents(value: string): bigint | null {
     const negative = value.startsWith('-');
     const unsigned = negative ? value.slice(1) : value;
     const cents = moneyToCents(unsigned);

@@ -2,10 +2,17 @@
 
 namespace App\Http\Controllers\Transactions;
 
+use App\Actions\Transactions\CompleteTransaction;
 use App\Actions\Transactions\CreateTransaction;
+use App\Actions\Transactions\RetryProfitDistribution;
 use App\Actions\Transactions\UpdateDraftTransaction;
 use App\Enums\TransactionStatus;
+use App\Exceptions\Transactions\InvalidTransactionCompletion;
 use App\Exceptions\Transactions\InvalidTransactionDraft;
+use App\Exceptions\Transactions\MissingTransactionItemCategory;
+use App\Exceptions\Transactions\ProfitDistributionRetryNotAllowed;
+use App\Exceptions\Transactions\ProfitRuleNotFoundForTransactionItem;
+use App\Exceptions\Transactions\TransactionNotCompletable;
 use App\Exceptions\Transactions\TransactionNotEditable;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Transactions\IndexTransactionRequest;
@@ -14,6 +21,8 @@ use App\Http\Requests\Transactions\UpdateTransactionRequest;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\ProfitDistribution;
+use App\Models\ProfitScheme;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\User;
@@ -21,7 +30,9 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -200,6 +211,7 @@ final class TransactionController extends Controller
                     'deleted_at',
                 ]),
             'creator:id,name,email',
+            'completer:id,name,email',
             'items' => fn ($query) => $query
                 ->select([
                     'id',
@@ -218,11 +230,40 @@ final class TransactionController extends Controller
                     'net_profit',
                     'rule_resolved_at',
                 ])
+                ->withSum(
+                    'distributions as distributed_total',
+                    'amount'
+                )
+                ->orderBy('id'),
+            'items.appliedProfitSchemeVersion' => fn ($query) => $query
+                ->select([
+                    'id',
+                    'profit_scheme_id',
+                    'version',
+                    'published_at',
+                ]),
+            'items.appliedProfitSchemeVersion.scheme' => fn (
+                $query
+            ) => $query->select(['id', 'name']),
+            'items.distributions' => fn ($query) => $query
+                ->select([
+                    'id',
+                    'transaction_item_id',
+                    'profit_recipient_id',
+                    'recipient_name_snapshot',
+                    'percentage',
+                    'amount',
+                    'created_at',
+                ])
                 ->orderBy('id'),
         ]);
 
         return Inertia::render('transactions/show', [
             'transaction' => $this->transactionDetail($transaction),
+            'recipientSummary' => fn (): array => $this
+                ->recipientSummary($transaction),
+            'distributedTotal' => fn (): string => $this
+                ->distributedTotal($transaction),
         ]);
     }
 
@@ -334,6 +375,67 @@ final class TransactionController extends Controller
         return to_route('transactions.show', $updated);
     }
 
+    public function complete(
+        Request $request,
+        Transaction $transaction,
+        CompleteTransaction $action
+    ): RedirectResponse {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            abort(401);
+        }
+
+        try {
+            $completed = $action->execute($transaction, $user);
+        } catch (
+            InvalidTransactionCompletion
+            |MissingTransactionItemCategory
+            |ProfitRuleNotFoundForTransactionItem
+            |TransactionNotCompletable $exception
+        ) {
+            throw ValidationException::withMessages([
+                'transaction' => $exception->getMessage(),
+            ]);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Transaction completed and queued for profit distribution.',
+        ]);
+
+        return to_route('transactions.show', $completed);
+    }
+
+    public function retryDistribution(
+        Transaction $transaction,
+        RetryProfitDistribution $action
+    ): RedirectResponse {
+        $status = $this->status($transaction);
+
+        try {
+            $result = $action->execute($transaction);
+        } catch (ProfitDistributionRetryNotAllowed $exception) {
+            throw ValidationException::withMessages([
+                'transaction' => $exception->getMessage(),
+            ]);
+        }
+
+        $message = match ($status) {
+            TransactionStatus::DistributionFailed => 'Profit distribution has been queued for retry.',
+            TransactionStatus::PendingDistribution => 'Profit distribution has been requeued.',
+            TransactionStatus::Distributed => 'Profit distribution is already complete.',
+            default => 'Profit distribution request accepted.',
+        };
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => $message,
+        ]);
+
+        return to_route('transactions.show', $result);
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -386,6 +488,7 @@ final class TransactionController extends Controller
     {
         $customer = $transaction->customer;
         $creator = $transaction->creator;
+        $completer = $transaction->completer;
         $status = $this->status($transaction);
 
         if (! $customer instanceof Customer
@@ -403,6 +506,11 @@ final class TransactionController extends Controller
             ),
             'status' => $status->value,
             'can_edit' => $status === TransactionStatus::Draft,
+            'can_complete' => $status === TransactionStatus::Draft,
+            'can_retry_distribution' => $status
+                === TransactionStatus::DistributionFailed,
+            'can_redrive_distribution' => $status
+                === TransactionStatus::PendingDistribution,
             'total_revenue' => $this->storedDecimal(
                 $transaction,
                 'total_revenue'
@@ -447,29 +555,184 @@ final class TransactionController extends Controller
                 'name' => $creator->name,
                 'email' => $creator->email,
             ],
+            'completer' => $completer === null
+                ? null
+                : [
+                    'id' => $completer->id,
+                    'name' => $completer->name,
+                    'email' => $completer->email,
+                ],
             'items' => $transaction->items
                 ->map(
-                    fn (
-                        TransactionItem $item
-                    ): array => [
-                        'id' => $item->id,
-                        'product_id' => $item->product_id,
-                        'product_category_id' => $item
-                            ->product_category_id,
-                        ...$this->itemSnapshot($item),
-                        'applied_profit_scheme_version_id' => $item
-                            ->applied_profit_scheme_version_id,
-                        'rule_resolved_at' => $this
-                            ->nullableDateTimeString(
-                                $item->getAttribute(
-                                    'rule_resolved_at'
-                                )
-                            ),
+                    fn (TransactionItem $item): array => $this
+                        ->transactionItemDetail($item)
+                )
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function transactionItemDetail(
+        TransactionItem $item
+    ): array {
+        $version = $item->appliedProfitSchemeVersion;
+        $appliedRule = null;
+
+        if ($version !== null) {
+            if (! $version->scheme instanceof ProfitScheme) {
+                throw new LogicException(
+                    'Frozen profit-scheme relationship must be loaded.'
+                );
+            }
+
+            $appliedRule = [
+                'profit_scheme_version_id' => $version->id,
+                'version' => $version->version,
+                'published_at' => $this->nullableDateTimeString(
+                    $version->getAttribute('published_at')
+                ),
+                'scheme' => [
+                    'id' => $version->scheme->id,
+                    'name' => $version->scheme->name,
+                ],
+            ];
+        }
+
+        return [
+            'id' => $item->id,
+            'product_id' => $item->product_id,
+            'product_category_id' => $item->product_category_id,
+            ...$this->itemSnapshot($item),
+            'applied_profit_scheme_version_id' => $item
+                ->applied_profit_scheme_version_id,
+            'applied_rule' => $appliedRule,
+            'rule_resolved_at' => $this->nullableDateTimeString(
+                $item->getAttribute('rule_resolved_at')
+            ),
+            'distributed_total' => $this->aggregateDecimal(
+                $item->getAttribute('distributed_total')
+            ),
+            'distributions' => $item->distributions
+                ->map(
+                    fn (ProfitDistribution $distribution): array => [
+                        'id' => $distribution->id,
+                        'profit_recipient_id' => $distribution
+                            ->profit_recipient_id,
+                        'recipient_name_snapshot' => $distribution
+                            ->recipient_name_snapshot,
+                        'percentage' => $this->storedDecimal(
+                            $distribution,
+                            'percentage'
+                        ),
+                        'amount' => $this->storedDecimal(
+                            $distribution,
+                            'amount'
+                        ),
+                        'created_at' => $this->dateTimeString(
+                            $distribution->getAttribute('created_at')
+                        ),
                     ]
                 )
                 ->values()
                 ->all(),
         ];
+    }
+
+    /**
+     * @return list<array{
+     *     profit_recipient_id: int,
+     *     recipient_name_snapshot: string,
+     *     total_amount: string,
+     *     contributing_item_count: int
+     * }>
+     */
+    private function recipientSummary(
+        Transaction $transaction
+    ): array {
+        if ($this->status($transaction)
+            !== TransactionStatus::Distributed) {
+            return [];
+        }
+
+        return array_values(DB::table('profit_distributions')
+            ->select([
+                'profit_recipient_id',
+                'recipient_name_snapshot',
+            ])
+            ->selectRaw(
+                'SUM(amount)::numeric(18, 2) AS total_amount'
+            )
+            ->selectRaw(
+                'COUNT(DISTINCT transaction_item_id) AS contributing_item_count'
+            )
+            ->where('transaction_id', $transaction->id)
+            ->groupBy([
+                'profit_recipient_id',
+                'recipient_name_snapshot',
+            ])
+            ->orderByDesc('total_amount')
+            ->orderBy('recipient_name_snapshot')
+            ->orderBy('profit_recipient_id')
+            ->get()
+            ->map(
+                function (object $row): array {
+                    if (! is_int($row->profit_recipient_id)
+                        || ! is_string($row->recipient_name_snapshot)
+                        || ! is_string($row->total_amount)) {
+                        throw new LogicException(
+                            'Recipient summary returned invalid database values.'
+                        );
+                    }
+
+                    return [
+                        'profit_recipient_id' => $row
+                            ->profit_recipient_id,
+                        'recipient_name_snapshot' => $row
+                            ->recipient_name_snapshot,
+                        'total_amount' => $row->total_amount,
+                        'contributing_item_count' => (int) $row
+                            ->contributing_item_count,
+                    ];
+                }
+            )
+            ->values()
+            ->all());
+    }
+
+    private function distributedTotal(
+        Transaction $transaction
+    ): string {
+        if ($this->status($transaction)
+            !== TransactionStatus::Distributed) {
+            return '0.00';
+        }
+
+        $total = DB::table('profit_distributions')
+            ->where('transaction_id', $transaction->id)
+            ->selectRaw(
+                'COALESCE(SUM(amount), 0)::numeric(18, 2) AS total'
+            )
+            ->value('total');
+
+        return $this->aggregateDecimal($total);
+    }
+
+    private function aggregateDecimal(mixed $value): string
+    {
+        if ($value === null) {
+            return '0.00';
+        }
+
+        if (! is_string($value)) {
+            throw new LogicException(
+                'Aggregated decimal value must be a string.'
+            );
+        }
+
+        return $value;
     }
 
     /**

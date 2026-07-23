@@ -68,6 +68,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 '{transaction}',
                 [TransactionController::class, 'update']
             )->name('update');
+            Route::post(
+                '{transaction}/complete',
+                [TransactionController::class, 'complete']
+            )->name('complete');
+            Route::post(
+                '{transaction}/retry-distribution',
+                [TransactionController::class, 'retryDistribution']
+            )->name('retry-distribution');
             Route::get('{transaction}', [TransactionController::class, 'show'])
                 ->name('show');
         });

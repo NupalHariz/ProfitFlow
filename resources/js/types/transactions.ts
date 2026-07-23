@@ -59,6 +59,9 @@ export type TransactionDetail = {
     transaction_date: string;
     status: TransactionStatus;
     can_edit: boolean;
+    can_complete: boolean;
+    can_retry_distribution: boolean;
+    can_redrive_distribution: boolean;
     total_revenue: string;
     total_production_cost: string;
     total_net_profit: string;
@@ -81,11 +84,41 @@ export type TransactionDetail = {
         name: string;
         email: string;
     };
+    completer: {
+        id: number;
+        name: string;
+        email: string;
+    } | null;
     items: (TransactionItemSnapshot & {
         id: number;
         product_id: number | null;
         product_category_id: number | null;
         applied_profit_scheme_version_id: number | null;
+        applied_rule: {
+            profit_scheme_version_id: number;
+            version: number;
+            published_at: string | null;
+            scheme: {
+                id: number;
+                name: string;
+            };
+        } | null;
         rule_resolved_at: string | null;
+        distributed_total: string;
+        distributions: {
+            id: number;
+            profit_recipient_id: number;
+            recipient_name_snapshot: string;
+            percentage: string;
+            amount: string;
+            created_at: string;
+        }[];
     })[];
+};
+
+export type TransactionRecipientSummary = {
+    profit_recipient_id: number;
+    recipient_name_snapshot: string;
+    total_amount: string;
+    contributing_item_count: number;
 };

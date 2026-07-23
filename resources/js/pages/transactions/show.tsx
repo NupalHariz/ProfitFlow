@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePoll } from '@inertiajs/react';
+import { useEffect } from 'react';
 import {
     ArrowLeft,
     CalendarDays,
@@ -8,6 +9,10 @@ import {
     UserRound,
 } from 'lucide-react';
 import TransactionController from '@/actions/App/Http/Controllers/Transactions/TransactionController';
+import TransactionCompletionDialog from '@/components/transactions/transaction-completion-dialog';
+import TransactionDistributionBreakdown from '@/components/transactions/transaction-distribution-breakdown';
+import TransactionLifecycle from '@/components/transactions/transaction-lifecycle';
+import TransactionRecipientSummaryCard from '@/components/transactions/transaction-recipient-summary';
 import TransactionStatusBadge from '@/components/transactions/transaction-status-badge';
 import TransactionSummary from '@/components/transactions/transaction-summary';
 import { Button } from '@/components/ui/button';
@@ -19,13 +24,43 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { formatRupiah } from '@/lib/money';
-import type { TransactionDetail } from '@/types';
+import type { TransactionDetail, TransactionRecipientSummary } from '@/types';
 
 export default function ShowTransaction({
     transaction,
+    recipientSummary,
+    distributedTotal,
 }: {
     transaction: TransactionDetail;
+    recipientSummary: TransactionRecipientSummary[];
+    distributedTotal: string;
 }) {
+    const shouldPoll =
+        transaction.status === 'pending_distribution' ||
+        transaction.status === 'processing_distribution';
+    const { start, stop } = usePoll(
+        2000,
+        {
+            only: ['transaction', 'recipientSummary', 'distributedTotal'],
+        },
+        {
+            autoStart: false,
+            mode: 'rest',
+        },
+    );
+
+    useEffect(() => {
+        if (shouldPoll) {
+            start();
+        } else {
+            stop();
+        }
+
+        return () => {
+            stop();
+        };
+    }, [shouldPoll, start, stop]);
+
     return (
         <>
             <Head title={transaction.transaction_number} />
@@ -52,18 +87,25 @@ export default function ShowTransaction({
                             totals.
                         </p>
                     </div>
-                    {transaction.can_edit && (
-                        <Button asChild>
-                            <Link
-                                href={TransactionController.edit(
-                                    transaction.id,
-                                )}
-                            >
-                                <Pencil />
-                                Edit draft
-                            </Link>
-                        </Button>
-                    )}
+                    <div className="flex flex-wrap gap-2">
+                        {transaction.can_edit && (
+                            <Button asChild variant="outline">
+                                <Link
+                                    href={TransactionController.edit(
+                                        transaction.id,
+                                    )}
+                                >
+                                    <Pencil />
+                                    Edit draft
+                                </Link>
+                            </Button>
+                        )}
+                        {transaction.can_complete && (
+                            <TransactionCompletionDialog
+                                transactionId={transaction.id}
+                            />
+                        )}
+                    </div>
                 </div>
 
                 <Card>
@@ -108,6 +150,8 @@ export default function ShowTransaction({
                         netProfit: transaction.total_net_profit,
                     }}
                 />
+
+                <TransactionLifecycle transaction={transaction} />
 
                 <Card>
                     <CardHeader>
@@ -192,9 +236,13 @@ export default function ShowTransaction({
                     </CardContent>
                 </Card>
 
-                {!transaction.can_edit && (
-                    <LifecycleCard transaction={transaction} />
-                )}
+                <TransactionDistributionBreakdown transaction={transaction} />
+
+                <TransactionRecipientSummaryCard
+                    transaction={transaction}
+                    recipientSummary={recipientSummary}
+                    distributedTotal={distributedTotal}
+                />
             </div>
         </>
     );
@@ -225,62 +273,6 @@ function HeaderValue({
             </div>
         </div>
     );
-}
-
-function LifecycleCard({ transaction }: { transaction: TransactionDetail }) {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Read-only lifecycle</CardTitle>
-                <CardDescription>
-                    This transaction is no longer a draft and cannot be edited.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <LifecycleValue
-                    label="Completed"
-                    value={nullableDateTime(transaction.completed_at)}
-                />
-                <LifecycleValue
-                    label="Distribution started"
-                    value={nullableDateTime(
-                        transaction.distribution_started_at,
-                    )}
-                />
-                <LifecycleValue
-                    label="Distributed"
-                    value={nullableDateTime(transaction.distributed_at)}
-                />
-                <LifecycleValue
-                    label="Cancelled"
-                    value={nullableDateTime(transaction.cancelled_at)}
-                />
-                {transaction.failure_reason && (
-                    <div className="sm:col-span-2 lg:col-span-4">
-                        <p className="text-xs text-muted-foreground">
-                            Failure reason
-                        </p>
-                        <p className="mt-1 text-sm">
-                            {transaction.failure_reason}
-                        </p>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
-}
-
-function LifecycleValue({ label, value }: { label: string; value: string }) {
-    return (
-        <div>
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="mt-1 text-sm font-medium">{value}</p>
-        </div>
-    );
-}
-
-function nullableDateTime(value: string | null): string {
-    return value === null ? 'Not recorded' : formatDateTime(value);
 }
 
 function formatDate(value: string): string {
