@@ -7,7 +7,9 @@ import {
     PercentCircle,
     ReceiptText,
     Tags,
+    UsersRound,
 } from 'lucide-react';
+import CustomerController from '@/actions/App/Http/Controllers/Customers/CustomerController';
 import ProductCategoryController from '@/actions/App/Http/Controllers/ProductCategories/ProductCategoryController';
 import ProductController from '@/actions/App/Http/Controllers/Products/ProductController';
 import ProfitSchemeController from '@/actions/App/Http/Controllers/ProfitSchemes/ProfitSchemeController';
@@ -43,6 +45,11 @@ const mainNavItems: NavItem[] = [
         title: 'Products',
         href: ProductController.index(),
         icon: Package,
+    },
+    {
+        title: 'Customers',
+        href: CustomerController.index(),
+        icon: UsersRound,
     },
     {
         title: 'Profit Schemes',

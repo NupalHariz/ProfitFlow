@@ -6,6 +6,7 @@ use App\Enums\TransactionStatus;
 use App\Exceptions\Transactions\InvalidTransactionDraft;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class TransactionDraftValidationTest extends TransactionActionTestCase
@@ -34,6 +35,24 @@ class TransactionDraftValidationTest extends TransactionActionTestCase
         $payload['customer_id'] = $customerId;
 
         $this->assertInvalidPayload($payload, 'deleted');
+    }
+
+    public function test_create_locks_available_customer_row(): void
+    {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $this->createDraft($this->validPayload());
+        $queries = DB::getQueryLog();
+
+        DB::disableQueryLog();
+
+        $this->assertTrue(collect($queries)->contains(
+            fn (array $query): bool => str_contains(
+                strtolower($query['query']),
+                'from "customers"'
+            ) && str_contains(strtolower($query['query']), 'for update')
+        ));
     }
 
     public function test_nonexistent_product_is_rejected(): void

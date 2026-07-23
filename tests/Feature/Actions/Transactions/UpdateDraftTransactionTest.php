@@ -167,6 +167,37 @@ class UpdateDraftTransactionTest extends TransactionActionTestCase
         $this->assertSame($beforeItems, $this->itemState($fresh));
     }
 
+    public function test_soft_deleted_customer_is_rejected_without_mutating_draft(): void
+    {
+        $product = $this->createProduct();
+        $transaction = $this->createDraft(
+            $this->validPayload($product)
+        );
+        $deletedCustomer = $this->createCustomer();
+        $deletedCustomerId = $deletedCustomer->id;
+        $deletedCustomer->delete();
+        $beforeHeader = $this->headerState($transaction);
+        $beforeItems = $this->itemState($transaction);
+        $payload = $this->validPayload($product);
+        $payload['customer_id'] = $deletedCustomerId;
+
+        try {
+            $this->updateDraft($transaction, $payload);
+            $this->fail('Expected deleted Customer to fail.');
+        } catch (InvalidTransactionDraft $exception) {
+            $this->assertStringContainsString(
+                'deleted',
+                $exception->getMessage()
+            );
+        }
+
+        $fresh = $transaction->fresh();
+
+        $this->assertNotNull($fresh);
+        $this->assertSame($beforeHeader, $this->headerState($fresh));
+        $this->assertSame($beforeItems, $this->itemState($fresh));
+    }
+
     public function test_replacement_insertion_failure_rolls_back_header_items_and_totals(): void
     {
         $original = $this->createProduct(attributes: [
@@ -302,6 +333,31 @@ class UpdateDraftTransactionTest extends TransactionActionTestCase
             $usedRowLock,
             'Expected the draft transaction query to use FOR UPDATE.'
         );
+    }
+
+    public function test_draft_update_locks_available_customer_row_for_update(): void
+    {
+        $product = $this->createProduct();
+        $transaction = $this->createDraft(
+            $this->validPayload($product)
+        );
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $this->updateDraft(
+            $transaction,
+            $this->validPayload($product)
+        );
+        $queries = DB::getQueryLog();
+
+        DB::disableQueryLog();
+
+        $this->assertTrue(collect($queries)->contains(
+            fn (array $query): bool => str_contains(
+                strtolower($query['query']),
+                'from "customers"'
+            ) && str_contains(strtolower($query['query']), 'for update')
+        ));
     }
 
     /**

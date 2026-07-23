@@ -15,6 +15,7 @@ import TransactionLifecycle from '@/components/transactions/transaction-lifecycl
 import TransactionRecipientSummaryCard from '@/components/transactions/transaction-recipient-summary';
 import TransactionStatusBadge from '@/components/transactions/transaction-status-badge';
 import TransactionSummary from '@/components/transactions/transaction-summary';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -120,6 +121,11 @@ export default function ShowTransaction({
                                     : (transaction.customer.email ??
                                       transaction.customer.phone ??
                                       'No contact details')
+                            }
+                            marker={
+                                transaction.customer.is_deleted
+                                    ? 'Deleted Customer'
+                                    : undefined
                             }
                         />
                         <HeaderValue
@@ -253,18 +259,23 @@ function HeaderValue({
     label,
     value,
     detail,
+    marker,
 }: {
     icon: typeof UserRound;
     label: string;
     value: string;
     detail?: string;
+    marker?: string;
 }) {
     return (
         <div className="flex gap-3">
             <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
             <div>
                 <p className="text-xs text-muted-foreground">{label}</p>
-                <p className="mt-1 font-medium">{value}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <p className="font-medium">{value}</p>
+                    {marker && <Badge variant="outline">{marker}</Badge>}
+                </div>
                 {detail && (
                     <p className="mt-0.5 text-xs text-muted-foreground">
                         {detail}

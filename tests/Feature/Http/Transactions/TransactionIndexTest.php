@@ -99,6 +99,31 @@ class TransactionIndexTest extends TransactionHttpTestCase
             );
     }
 
+    public function test_index_displays_soft_deleted_customer_with_marker(): void
+    {
+        $user = $this->user();
+        $customer = Customer::factory()->create([
+            'name' => 'Historical Customer',
+        ]);
+        $transaction = $this->transaction($user, customer: $customer);
+        $customer->delete();
+
+        $this->actingAs($user)
+            ->get(route('transactions.index'))
+            ->assertInertia(
+                fn (Assert $page) => $page
+                    ->where('transactions.data.0.id', $transaction->id)
+                    ->where(
+                        'transactions.data.0.customer.name',
+                        'Historical Customer'
+                    )
+                    ->where(
+                        'transactions.data.0.customer.is_deleted',
+                        true
+                    )
+            );
+    }
+
     public function test_status_filter_uses_transaction_status(): void
     {
         $user = $this->user();

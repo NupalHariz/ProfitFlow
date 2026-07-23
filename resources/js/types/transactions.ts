@@ -50,6 +50,13 @@ export type TransactionFormData = {
     customer_id: number | null;
     transaction_date: string;
     current_customer_available?: boolean;
+    current_customer?: {
+        id: number;
+        name: string;
+        email: string | null;
+        phone: string | null;
+        is_deleted: boolean;
+    };
     items: TransactionFormItem[];
 };
 

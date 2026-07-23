@@ -121,6 +121,42 @@ class TransactionDetailTest extends TransactionHttpTestCase
             );
     }
 
+    public function test_distributed_detail_displays_soft_deleted_customer_with_marker(): void
+    {
+        $user = $this->user();
+        $customer = Customer::factory()->create([
+            'name' => 'Retired Historical Customer',
+        ]);
+        $transaction = $this->draft($user, $customer);
+        $transaction->update([
+            'status' => TransactionStatus::Distributed,
+            'completed_by_user_id' => $user->id,
+            'completed_at' => now()->subMinutes(2),
+            'distribution_started_at' => now()->subMinute(),
+            'distributed_at' => now(),
+        ]);
+        $customer->delete();
+
+        $this->actingAs($user)
+            ->get(route('transactions.show', $transaction))
+            ->assertOk()
+            ->assertInertia(
+                fn (Assert $page) => $page
+                    ->where(
+                        'transaction.customer.name',
+                        'Retired Historical Customer'
+                    )
+                    ->where(
+                        'transaction.customer.is_deleted',
+                        true
+                    )
+                    ->where(
+                        'transaction.status',
+                        TransactionStatus::Distributed->value
+                    )
+            );
+    }
+
     public function test_draft_detail_is_editable_and_non_draft_detail_is_read_only(): void
     {
         $user = $this->user();

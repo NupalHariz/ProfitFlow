@@ -280,6 +280,176 @@ class TransactionEditTest extends TransactionHttpTestCase
             );
     }
 
+    public function test_deleted_customer_identity_is_visible_but_not_selectable_and_get_does_not_mutate_draft(): void
+    {
+        $user = $this->user();
+        $customer = Customer::factory()->create([
+            'name' => 'Retired Customer',
+            'email' => 'retired@example.test',
+            'phone' => '+62 812 5555',
+        ]);
+        $available = Customer::factory()->create([
+            'name' => 'Available Customer',
+        ]);
+        $product = Product::factory()->create();
+        $transaction = $this->draft($user, $customer, $product);
+        $beforeHeader = $this->headerState($transaction);
+        $beforeItems = $this->itemState($transaction);
+        $customer->delete();
+
+        $this->actingAs($user)
+            ->get(route('transactions.edit', $transaction))
+            ->assertOk()
+            ->assertInertia(
+                fn (Assert $page) => $page
+                    ->where(
+                        'transaction.current_customer_available',
+                        false
+                    )
+                    ->where(
+                        'transaction.current_customer.id',
+                        $customer->id
+                    )
+                    ->where(
+                        'transaction.current_customer.name',
+                        'Retired Customer'
+                    )
+                    ->where(
+                        'transaction.current_customer.email',
+                        'retired@example.test'
+                    )
+                    ->where(
+                        'transaction.current_customer.is_deleted',
+                        true
+                    )
+                    ->where(
+                        'customers',
+                        fn (mixed $customers): bool => $customers
+                            instanceof Collection
+                            && $customers->pluck('id')->all()
+                                === [$available->id]
+                    )
+            );
+
+        $this->assertSame(
+            $beforeHeader,
+            $this->headerState($transaction)
+        );
+        $this->assertSame(
+            $beforeItems,
+            $this->itemState($transaction)
+        );
+    }
+
+    public function test_deleted_customer_resubmission_and_missing_replacement_fail_safely(): void
+    {
+        $user = $this->user();
+        $customer = Customer::factory()->create();
+        $product = Product::factory()->create();
+        $transaction = $this->draft($user, $customer, $product);
+        $beforeHeader = $this->headerState($transaction);
+        $beforeItems = $this->itemState($transaction);
+        $customerId = $customer->id;
+        $customer->delete();
+        $payload = $this->payload($customer, $product);
+
+        $this->actingAs($user)
+            ->patch(route('transactions.update', $transaction), [
+                ...$payload,
+                'customer_id' => '',
+            ])
+            ->assertSessionHasErrors('customer_id');
+        $this->actingAs($user)
+            ->patch(route('transactions.update', $transaction), [
+                ...$payload,
+                'customer_id' => $customerId,
+            ])
+            ->assertSessionHasErrors('transaction');
+
+        $this->assertSame(
+            $beforeHeader,
+            $this->headerState($transaction)
+        );
+        $this->assertSame(
+            $beforeItems,
+            $this->itemState($transaction)
+        );
+    }
+
+    public function test_available_customer_replacement_preserves_full_item_rebuild_semantics(): void
+    {
+        $user = $this->user();
+        $retiredCustomer = Customer::factory()->create();
+        $replacementCustomer = Customer::factory()->create();
+        $originalProduct = Product::factory()->create();
+        $replacementCategory = ProductCategory::factory()->create([
+            'name' => 'Current Category',
+        ]);
+        $replacementProduct = Product::factory()
+            ->for($replacementCategory, 'category')
+            ->create([
+                'name' => 'Current Product',
+                'sku' => 'CURRENT-PRODUCT',
+                'default_selling_price' => '125.00',
+                'default_production_cost' => '45.00',
+            ]);
+        $transaction = $this->draft(
+            $user,
+            $retiredCustomer,
+            $originalProduct
+        );
+        $retiredCustomer->delete();
+
+        $this->actingAs($user)
+            ->patch(route('transactions.update', $transaction), [
+                'customer_id' => $replacementCustomer->id,
+                'transaction_date' => '2026-08-10',
+                'items' => [
+                    [
+                        'product_id' => $replacementProduct->id,
+                        'quantity' => 2,
+                        'unit_selling_price' => '100.00',
+                    ],
+                    [
+                        'product_id' => $replacementProduct->id,
+                        'quantity' => 1,
+                        'unit_selling_price' => null,
+                    ],
+                ],
+            ])
+            ->assertSessionHasNoErrors();
+
+        $fresh = Transaction::query()->findOrFail($transaction->id);
+        $items = $fresh->items()->orderBy('id')->get();
+        $this->assertSame(
+            $replacementCustomer->id,
+            $fresh->customer_id
+        );
+        $this->assertSame(
+            ['Current Product', 'Current Product'],
+            $items->pluck('product_name_snapshot')->all()
+        );
+        $this->assertSame(
+            ['CURRENT-PRODUCT', 'CURRENT-PRODUCT'],
+            $items->pluck('product_sku_snapshot')->all()
+        );
+        $this->assertSame(
+            ['Current Category', 'Current Category'],
+            $items->pluck('category_name_snapshot')->all()
+        );
+        $this->assertSame(
+            ['100.00', '125.00'],
+            $items->pluck('unit_selling_price')->all()
+        );
+        $this->assertSame(
+            ['45.00', '45.00'],
+            $items->pluck('unit_production_cost')->all()
+        );
+        $this->assertSame('325.00', $fresh->total_revenue);
+        $this->assertSame('135.00', $fresh->total_production_cost);
+        $this->assertSame('190.00', $fresh->total_net_profit);
+    }
+
     #[DataProvider('unavailableProductStates')]
     public function test_draft_edit_flags_product_or_category_unavailability(
         string $state

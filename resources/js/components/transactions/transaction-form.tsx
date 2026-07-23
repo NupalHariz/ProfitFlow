@@ -151,11 +151,34 @@ export default function TransactionForm({
                                 false && (
                                 <div className="flex gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-800 md:col-span-2 dark:text-amber-300">
                                     <CircleAlert className="mt-0.5 size-4 shrink-0" />
-                                    <p>
-                                        The stored customer is no longer
-                                        available. Select another customer
-                                        before saving.
-                                    </p>
+                                    <div>
+                                        <p className="font-medium">
+                                            This Customer is no longer
+                                            available.
+                                        </p>
+                                        {initialData.current_customer && (
+                                            <p className="mt-1">
+                                                Existing relationship:{' '}
+                                                <strong>
+                                                    {
+                                                        initialData
+                                                            .current_customer
+                                                            .name
+                                                    }
+                                                </strong>
+                                                {initialData.current_customer
+                                                    .email
+                                                    ? ` · ${initialData.current_customer.email}`
+                                                    : ''}
+                                            </p>
+                                        )}
+                                        <p className="mt-1">
+                                            The existing transaction
+                                            relationship is shown for reference.
+                                            Choose an available Customer before
+                                            saving the draft.
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 

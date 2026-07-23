@@ -60,7 +60,7 @@ final class TransactionController extends Controller
             ->with([
                 'customer' => fn ($query) => $query
                     ->withTrashed()
-                    ->select(['id', 'name']),
+                    ->select(['id', 'name', 'deleted_at']),
             ])
             ->withCount('items');
 
@@ -275,6 +275,14 @@ final class TransactionController extends Controller
         );
 
         $transaction->load([
+            'customer' => fn ($query) => $query
+                ->select([
+                    'id',
+                    'name',
+                    'email',
+                    'phone',
+                    'deleted_at',
+                ]),
             'items' => fn ($query) => $query
                 ->select([
                     'id',
@@ -293,6 +301,14 @@ final class TransactionController extends Controller
                 ])
                 ->orderBy('id'),
         ]);
+        $customer = $transaction->customer;
+
+        if (! $customer instanceof Customer) {
+            throw new LogicException(
+                'Draft transaction customer must be loaded.'
+            );
+        }
+
         $selectedProductIds = array_values(
             $transaction->items
                 ->pluck('product_id')
@@ -319,6 +335,13 @@ final class TransactionController extends Controller
                     $availableCustomerIds,
                     true
                 ),
+                'current_customer' => [
+                    'id' => $customer->id,
+                    'name' => $customer->name,
+                    'email' => $customer->email,
+                    'phone' => $customer->phone,
+                    'is_deleted' => $customer->trashed(),
+                ],
                 'items' => $transaction->items
                     ->map(
                         fn (TransactionItem $item): array => [
@@ -459,6 +482,7 @@ final class TransactionController extends Controller
             'customer' => [
                 'id' => $customer->id,
                 'name' => $customer->name,
+                'is_deleted' => $customer->trashed(),
             ],
             'total_revenue' => $this->storedDecimal(
                 $transaction,
@@ -795,6 +819,7 @@ final class TransactionController extends Controller
     {
         /** @var Collection<int, Customer> $selected */
         $selected = Customer::query()
+            ->availableForTransaction()
             ->when(
                 $selectedId !== null,
                 fn ($query) => $query->whereKey($selectedId),
@@ -804,6 +829,7 @@ final class TransactionController extends Controller
         $remainingLimit = self::LOOKUP_LIMIT - $selected->count();
         /** @var Collection<int, Customer> $available */
         $available = Customer::query()
+            ->availableForTransaction()
             ->when(
                 $selectedId !== null,
                 fn ($query) => $query->whereKeyNot($selectedId)

@@ -3,6 +3,7 @@ import { ArrowRight, Plus, Search } from 'lucide-react';
 import { useState } from 'react';
 import TransactionController from '@/actions/App/Http/Controllers/Transactions/TransactionController';
 import TransactionStatusBadge from '@/components/transactions/transaction-status-badge';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -30,6 +31,7 @@ type TransactionRow = {
     customer: {
         id: number;
         name: string;
+        is_deleted: boolean;
     };
     total_revenue: string;
     total_production_cost: string;
@@ -240,11 +242,27 @@ export default function TransactionIndex({
                                                     }
                                                 </CardTitle>
                                                 <CardDescription className="mt-1">
-                                                    {transaction.customer.name}{' '}
-                                                    ·{' '}
-                                                    {formatDate(
-                                                        transaction.transaction_date,
-                                                    )}
+                                                    <span className="inline-flex flex-wrap items-center gap-2">
+                                                        {
+                                                            transaction.customer
+                                                                .name
+                                                        }
+                                                        {transaction.customer
+                                                            .is_deleted && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="text-[0.65rem]"
+                                                            >
+                                                                Deleted Customer
+                                                            </Badge>
+                                                        )}
+                                                        <span>
+                                                            ·{' '}
+                                                            {formatDate(
+                                                                transaction.transaction_date,
+                                                            )}
+                                                        </span>
+                                                    </span>
                                                 </CardDescription>
                                             </div>
                                             <TransactionStatusBadge
@@ -348,10 +366,23 @@ export default function TransactionIndex({
                                                         </p>
                                                     </td>
                                                     <td className="px-5 py-4">
-                                                        {
-                                                            transaction.customer
-                                                                .name
-                                                        }
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span>
+                                                                {
+                                                                    transaction
+                                                                        .customer
+                                                                        .name
+                                                                }
+                                                            </span>
+                                                            {transaction
+                                                                .customer
+                                                                .is_deleted && (
+                                                                <Badge variant="outline">
+                                                                    Deleted
+                                                                    Customer
+                                                                </Badge>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="px-5 py-4">
                                                         <TransactionStatusBadge

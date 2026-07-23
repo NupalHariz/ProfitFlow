@@ -30,7 +30,14 @@ final class TransactionDraftBuilder
      */
     public function build(array $data): PreparedTransactionDraft
     {
-        if (! Customer::query()->whereKey($data['customer_id'])->exists()) {
+        $customer = Customer::query()
+            ->availableForTransaction()
+            ->select('id')
+            ->whereKey($data['customer_id'])
+            ->lockForUpdate()
+            ->first();
+
+        if ($customer === null) {
             throw new InvalidTransactionDraft(
                 "Customer [{$data['customer_id']}] does not exist or has been deleted."
             );
