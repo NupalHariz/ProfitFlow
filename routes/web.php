@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfitSchemes\ProfitSchemeAllocationController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemeController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemePublicationController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemeVersionController;
+use App\Http\Controllers\Transactions\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -48,6 +49,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 '{scheme}/versions/{version}/publish',
                 [ProfitSchemePublicationController::class, 'store']
             )->name('versions.publish');
+        });
+
+    Route::prefix('transactions')
+        ->name('transactions.')
+        ->group(function (): void {
+            Route::get('/', [TransactionController::class, 'index'])
+                ->name('index');
+            Route::get('create', [TransactionController::class, 'create'])
+                ->name('create');
+            Route::post('/', [TransactionController::class, 'store'])
+                ->name('store');
+            Route::get(
+                '{transaction}/edit',
+                [TransactionController::class, 'edit']
+            )->name('edit');
+            Route::patch(
+                '{transaction}',
+                [TransactionController::class, 'update']
+            )->name('update');
+            Route::get('{transaction}', [TransactionController::class, 'show'])
+                ->name('show');
         });
 });
 

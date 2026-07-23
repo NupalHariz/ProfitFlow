@@ -1,6 +1,13 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid, PercentCircle } from 'lucide-react';
+import {
+    BookOpen,
+    FolderGit2,
+    LayoutGrid,
+    PercentCircle,
+    ReceiptText,
+} from 'lucide-react';
 import ProfitSchemeController from '@/actions/App/Http/Controllers/ProfitSchemes/ProfitSchemeController';
+import TransactionController from '@/actions/App/Http/Controllers/Transactions/TransactionController';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -27,6 +34,11 @@ const mainNavItems: NavItem[] = [
         title: 'Profit Schemes',
         href: ProfitSchemeController.index(),
         icon: PercentCircle,
+    },
+    {
+        title: 'Transactions',
+        href: TransactionController.index(),
+        icon: ReceiptText,
     },
 ];
 
