@@ -3,6 +3,7 @@
 namespace Tests\Feature\Actions\Transactions;
 
 use App\Enums\TransactionStatus;
+use App\Jobs\DistributeTransactionProfit;
 use App\Models\ProfitDistribution;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -186,7 +187,14 @@ class CompleteTransactionTest extends TransactionActionTestCase
             $sql
         );
         $this->assertSame(0, ProfitDistribution::query()->count());
-        Queue::assertNothingPushed();
+        Queue::assertPushedOn(
+            'critical',
+            DistributeTransactionProfit::class,
+            static fn (
+                DistributeTransactionProfit $job
+            ): bool => $job->transactionId === $completed->id
+                && $job->afterCommit === true
+        );
     }
 
     public function test_a_transaction_with_only_non_positive_profit_still_becomes_pending_distribution(): void
@@ -242,6 +250,13 @@ class CompleteTransactionTest extends TransactionActionTestCase
             ),
             'Non-positive items must not invoke rule resolution.'
         );
-        Queue::assertNothingPushed();
+        Queue::assertPushedOn(
+            'critical',
+            DistributeTransactionProfit::class,
+            static fn (
+                DistributeTransactionProfit $job
+            ): bool => $job->transactionId === $completed->id
+                && $job->afterCommit === true
+        );
     }
 }

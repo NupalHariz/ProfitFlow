@@ -12,6 +12,7 @@ use App\Models\ProfitSchemeVersion;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Tests\Support\CreatesDomainRecords;
 use Tests\TestCase;
 
@@ -29,6 +30,7 @@ abstract class TransactionActionTestCase extends TestCase
 
         $this->assertSame('pgsql', config('database.default'));
 
+        Queue::fake();
         $this->creator = $this->createUser();
         $this->customer = $this->createCustomer();
     }

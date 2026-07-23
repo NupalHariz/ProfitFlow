@@ -7,6 +7,7 @@ use App\Exceptions\Transactions\InvalidTransactionCompletion;
 use App\Exceptions\Transactions\MissingTransactionItemCategory;
 use App\Exceptions\Transactions\ProfitRuleNotFoundForTransactionItem;
 use App\Exceptions\Transactions\TransactionNotCompletable;
+use App\Jobs\DistributeTransactionProfit;
 use App\Models\ProfitSchemeVersion;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
@@ -30,7 +31,7 @@ final class CompleteTransaction
         Transaction $transaction,
         User $completer
     ): Transaction {
-        return DB::transaction(function () use (
+        $completed = DB::transaction(function () use (
             $transaction,
             $completer
         ): Transaction {
@@ -185,6 +186,12 @@ final class CompleteTransaction
 
             return $this->loadOrderedItems($lockedTransaction);
         });
+
+        DistributeTransactionProfit::dispatch((int) $completed->getKey())
+            ->onQueue('critical')
+            ->afterCommit();
+
+        return $completed;
     }
 
     private function assertPersistedCompleter(User $completer): void

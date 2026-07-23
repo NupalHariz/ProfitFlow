@@ -6,9 +6,11 @@ use App\Enums\TransactionStatus;
 use App\Exceptions\Transactions\InvalidTransactionCompletion;
 use App\Exceptions\Transactions\MissingTransactionItemCategory;
 use App\Exceptions\Transactions\ProfitRuleNotFoundForTransactionItem;
+use App\Jobs\DistributeTransactionProfit;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 
@@ -75,6 +77,7 @@ class CompleteTransactionFailureTest extends TransactionActionTestCase
             $transaction->fresh()?->status
         );
         $this->assertNull($transaction->fresh()?->completed_at);
+        Queue::assertNotPushed(DistributeTransactionProfit::class);
     }
 
     public function test_a_profitable_item_without_category_identity_is_rejected(): void
@@ -109,6 +112,7 @@ class CompleteTransactionFailureTest extends TransactionActionTestCase
         }
 
         $this->assertSame($before, $this->storedState($transaction));
+        Queue::assertNotPushed(DistributeTransactionProfit::class);
     }
 
     public function test_a_non_profitable_item_without_category_identity_can_complete(): void
