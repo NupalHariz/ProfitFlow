@@ -1,0 +1,355 @@
+<?php
+
+namespace App\Http\Controllers\ProfitSchemes;
+
+use App\Actions\ProfitSchemes\CreateProfitSchemeVersion;
+use App\Actions\ProfitSchemes\UpdateDraftProfitSchemeVersion;
+use App\Enums\ProfitRecipientType;
+use App\Exceptions\ProfitSchemes\InvalidProfitSchemeVersion;
+use App\Exceptions\ProfitSchemes\ProfitSchemeVersionImmutable;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\ProfitSchemes\StoreProfitSchemeVersionRequest;
+use App\Http\Requests\ProfitSchemes\UpdateProfitSchemeVersionRequest;
+use App\Models\ProductCategory;
+use App\Models\ProfitRecipient;
+use App\Models\ProfitScheme;
+use App\Models\ProfitSchemeAllocation;
+use App\Models\ProfitSchemeVersion;
+use App\Models\User;
+use App\Services\ProfitSharing\FixedDecimal;
+use Carbon\CarbonInterface;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
+use LogicException;
+
+class ProfitSchemeVersionController extends Controller
+{
+    public function create(ProfitScheme $scheme): Response
+    {
+        return Inertia::render('profit-schemes/versions/create', [
+            'scheme' => $this->schemeSummary($scheme),
+            'categories' => $this->categoryLookups(),
+        ]);
+    }
+
+    public function store(
+        StoreProfitSchemeVersionRequest $request,
+        ProfitScheme $scheme,
+        CreateProfitSchemeVersion $action
+    ): RedirectResponse {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            abort(401);
+        }
+
+        try {
+            $version = $action->execute(
+                $scheme,
+                $request->domainData(),
+                $user
+            );
+        } catch (InvalidProfitSchemeVersion $exception) {
+            throw ValidationException::withMessages([
+                'version' => $exception->getMessage(),
+            ]);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => "Draft version {$version->version} created.",
+        ]);
+
+        return to_route('profit-schemes.versions.edit', [
+            'scheme' => $scheme,
+            'version' => $version,
+        ]);
+    }
+
+    public function edit(
+        ProfitScheme $scheme,
+        ProfitSchemeVersion $version
+    ): Response {
+        $version->loadCount('appliedTransactionItems');
+        $version->load([
+            'allocations' => fn ($query) => $query
+                ->select([
+                    'id',
+                    'profit_scheme_version_id',
+                    'profit_recipient_id',
+                    'percentage',
+                ])
+                ->orderBy('id'),
+        ]);
+        $selectedRecipientIds = array_values(
+            $version->allocations
+                ->pluck('profit_recipient_id')
+                ->map(fn (mixed $id): int => (int) $id)
+                ->all()
+        );
+
+        return Inertia::render('profit-schemes/versions/edit', [
+            'scheme' => $this->schemeSummary($scheme),
+            'version' => $this->versionData($version),
+            'categories' => $this->categoryLookups(
+                $version->product_category_id
+            ),
+            'recipients' => $this->recipientLookups(
+                $selectedRecipientIds
+            ),
+            'lookup_limit' => 250,
+        ]);
+    }
+
+    public function update(
+        UpdateProfitSchemeVersionRequest $request,
+        ProfitScheme $scheme,
+        ProfitSchemeVersion $version,
+        UpdateDraftProfitSchemeVersion $action
+    ): RedirectResponse {
+        try {
+            $updated = $action->execute(
+                $version,
+                $request->domainData()
+            );
+        } catch (
+            InvalidProfitSchemeVersion|ProfitSchemeVersionImmutable $exception
+        ) {
+            throw ValidationException::withMessages([
+                'version' => $exception->getMessage(),
+            ]);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => "Version {$updated->version} rule saved.",
+        ]);
+
+        return to_route('profit-schemes.versions.edit', [
+            'scheme' => $scheme,
+            'version' => $updated,
+        ]);
+    }
+
+    /**
+     * The technical-test dataset is bounded. Replace this list with
+     * server-side search when category volume materially grows.
+     *
+     * @return list<array{
+     *     id: int,
+     *     name: string,
+     *     is_active: bool,
+     *     is_deleted: bool
+     * }>
+     */
+    private function categoryLookups(?int $selectedId = null): array
+    {
+        $query = ProductCategory::withTrashed()
+            ->select(['id', 'name', 'is_active', 'deleted_at'])
+            ->where(function ($query) use ($selectedId): void {
+                $query->whereNull('deleted_at');
+
+                if ($selectedId !== null) {
+                    $query->orWhere('id', $selectedId);
+                }
+            })
+            ->orderBy('name')
+            ->orderBy('id')
+            ->limit(250);
+
+        return array_values(
+            $query->get()
+                ->map(
+                    fn (ProductCategory $category): array => [
+                        'id' => $category->id,
+                        'name' => $category->name,
+                        'is_active' => $category->is_active,
+                        'is_deleted' => $category->trashed(),
+                    ]
+                )
+                ->all()
+        );
+    }
+
+    /**
+     * The technical-test dataset is bounded. Replace this list with
+     * server-side search when recipient volume materially grows.
+     *
+     * @param  list<int>  $selectedIds
+     * @return list<array{
+     *     id: int,
+     *     code: string,
+     *     display_name: string,
+     *     type: string,
+     *     is_active: bool
+     * }>
+     */
+    private function recipientLookups(array $selectedIds): array
+    {
+        /** @var Collection<int, ProfitRecipient> $selected */
+        $selected = ProfitRecipient::query()
+            ->whereIn('id', $selectedIds)
+            ->get(['id', 'code', 'display_name', 'type', 'is_active']);
+        /** @var Collection<int, ProfitRecipient> $active */
+        $active = ProfitRecipient::query()
+            ->where('is_active', true)
+            ->when(
+                $selectedIds !== [],
+                fn ($query) => $query->whereNotIn('id', $selectedIds)
+            )
+            ->select(['id', 'code', 'display_name', 'type', 'is_active'])
+            ->orderBy('display_name')
+            ->orderBy('id')
+            ->limit(250)
+            ->get();
+
+        return array_values(
+            $selected
+                ->concat($active)
+                ->unique('id')
+                ->sortBy(
+                    fn (ProfitRecipient $recipient): string => mb_strtolower(
+                        $recipient->display_name
+                    )
+                )
+                ->map(
+                    fn (ProfitRecipient $recipient): array => [
+                        'id' => $recipient->id,
+                        'code' => $recipient->code,
+                        'display_name' => $recipient->display_name,
+                        'type' => $this->recipientType($recipient->type),
+                        'is_active' => $recipient->is_active,
+                    ]
+                )
+                ->all()
+        );
+    }
+
+    /**
+     * @return array{id: int, name: string, code: string, is_active: bool}
+     */
+    private function schemeSummary(ProfitScheme $scheme): array
+    {
+        return [
+            'id' => $scheme->id,
+            'name' => $scheme->name,
+            'code' => $scheme->code,
+            'is_active' => $scheme->is_active,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function versionData(ProfitSchemeVersion $version): array
+    {
+        $published = $version->published_at !== null;
+        $historicallyReferenced = (int) $version->getAttribute(
+            'applied_transaction_items_count'
+        ) > 0;
+        $totalUnits = $version->allocations->sum(
+            fn (ProfitSchemeAllocation $allocation): int => FixedDecimal::percentageToUnits(
+                $this->allocationPercentage($allocation)
+            )
+        );
+
+        return [
+            'id' => $version->id,
+            'version' => $version->version,
+            'product_category_id' => $version->product_category_id,
+            'minimum_profit' => $version->minimum_profit,
+            'maximum_profit' => $version->maximum_profit,
+            'effective_from' => $this->dateString(
+                $version->getAttribute('effective_from')
+            ),
+            'effective_until' => $this->nullableDateString(
+                $version->getAttribute('effective_until')
+            ),
+            'priority' => $version->priority,
+            'is_active' => $version->is_active,
+            'published_at' => $this->nullableDateTimeString(
+                $version->getAttribute('published_at')
+            ),
+            'is_published' => $published,
+            'is_historically_referenced' => $historicallyReferenced,
+            'is_immutable' => $published || $historicallyReferenced,
+            'can_edit' => ! $published && ! $historicallyReferenced,
+            'allocation_total' => FixedDecimal::formatPercentage($totalUnits),
+            'allocations' => $version->allocations
+                ->map(
+                    fn (
+                        ProfitSchemeAllocation $allocation
+                    ): array => [
+                        'id' => $allocation->id,
+                        'profit_recipient_id' => $allocation
+                            ->profit_recipient_id,
+                        'percentage' => $this->allocationPercentage(
+                            $allocation
+                        ),
+                    ]
+                )
+                ->values()
+                ->all(),
+        ];
+    }
+
+    private function recipientType(
+        ProfitRecipientType|string $type
+    ): string {
+        return $type instanceof ProfitRecipientType
+            ? $type->value
+            : $type;
+    }
+
+    private function allocationPercentage(
+        ProfitSchemeAllocation $allocation
+    ): string {
+        $percentage = $allocation->getAttribute('percentage');
+
+        if (! is_string($percentage)) {
+            throw new LogicException(
+                'Stored allocation percentage must be a decimal string.'
+            );
+        }
+
+        return $percentage;
+    }
+
+    private function dateString(mixed $value): string
+    {
+        if ($value instanceof CarbonInterface) {
+            return $value->toDateString();
+        }
+
+        if (is_string($value)) {
+            return $value;
+        }
+
+        throw new LogicException('Stored rule date is invalid.');
+    }
+
+    private function nullableDateString(mixed $value): ?string
+    {
+        return $value === null ? null : $this->dateString($value);
+    }
+
+    private function nullableDateTimeString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($value instanceof CarbonInterface) {
+            return $value->toIso8601String();
+        }
+
+        if (is_string($value)) {
+            return $value;
+        }
+
+        throw new LogicException('Stored publication timestamp is invalid.');
+    }
+}
