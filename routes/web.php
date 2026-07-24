@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Customers\CustomerController;
+use App\Http\Controllers\Investors\InvestorController;
 use App\Http\Controllers\ProductCategories\ProductCategoryController;
 use App\Http\Controllers\Products\ProductController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemeAllocationController;
@@ -91,6 +92,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 [CustomerController::class, 'destroy']
             )->name('destroy');
             Route::get('{customer}', [CustomerController::class, 'show'])
+                ->name('show');
+        });
+
+    Route::prefix('investors')
+        ->name('investors.')
+        ->group(function (): void {
+            Route::get('/', [InvestorController::class, 'index'])
+                ->name('index');
+            Route::get('create', [InvestorController::class, 'create'])
+                ->name('create');
+            Route::post('/', [InvestorController::class, 'store'])
+                ->name('store');
+            Route::get(
+                '{investor}/edit',
+                [InvestorController::class, 'edit']
+            )->name('edit');
+            Route::patch(
+                '{investor}/status',
+                [InvestorController::class, 'updateStatus']
+            )->name('update-status');
+            Route::patch(
+                '{investor}',
+                [InvestorController::class, 'update']
+            )->name('update');
+            Route::delete(
+                '{investor}',
+                [InvestorController::class, 'destroy']
+            )->name('destroy');
+            Route::get('{investor}', [InvestorController::class, 'show'])
                 ->name('show');
         });
 
