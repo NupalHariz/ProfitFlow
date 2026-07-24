@@ -24,11 +24,15 @@ export default function AuthCardLayout({
             <div className="flex w-full max-w-md flex-col gap-6">
                 <Link
                     href={home()}
-                    className="flex items-center gap-2 self-center font-medium"
+                    className="flex flex-col items-center gap-2 self-center text-center font-medium"
                 >
-                    <div className="flex h-9 w-9 items-center justify-center">
-                        <AppLogoIcon className="size-9 fill-current text-black dark:text-white" />
+                    <div className="flex size-10 items-center justify-center rounded-md bg-neutral-950">
+                        <AppLogoIcon className="size-10" />
                     </div>
+                    <span>ProfitFlow</span>
+                    <span className="text-xs font-normal text-muted-foreground">
+                        Dynamic Profit Distribution System
+                    </span>
                 </Link>
 
                 <div className="flex flex-col gap-6">

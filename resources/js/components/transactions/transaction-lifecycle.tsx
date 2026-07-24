@@ -44,7 +44,7 @@ const statusContent: Record<
     cancelled: {
         title: 'Transaction cancelled',
         description:
-            'This transaction is read-only. Cancellation actions are not available in this workflow.',
+            'This transaction was cancelled and can no longer be edited or completed.',
     },
 };
 
@@ -72,7 +72,9 @@ export default function TransactionLifecycle({
                 <div>
                     <CardTitle>Transaction status</CardTitle>
                     <CardDescription>
-                        Review completion and distribution progress.
+                        {transaction.status === 'cancelled'
+                            ? 'Review the cancellation status and recorded time.'
+                            : 'Review completion and distribution progress.'}
                     </CardDescription>
                 </div>
                 {transaction.can_retry_distribution && (

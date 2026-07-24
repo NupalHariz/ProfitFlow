@@ -9,6 +9,7 @@ import {
     UserRound,
 } from 'lucide-react';
 import TransactionController from '@/actions/App/Http/Controllers/Transactions/TransactionController';
+import TransactionCancellationDialog from '@/components/transactions/transaction-cancellation-dialog';
 import TransactionCompletionDialog from '@/components/transactions/transaction-completion-dialog';
 import TransactionDistributionBreakdown from '@/components/transactions/transaction-distribution-breakdown';
 import TransactionLifecycle from '@/components/transactions/transaction-lifecycle';
@@ -100,6 +101,11 @@ export default function ShowTransaction({
                                     Edit draft
                                 </Link>
                             </Button>
+                        )}
+                        {transaction.can_cancel && (
+                            <TransactionCancellationDialog
+                                transactionId={transaction.id}
+                            />
                         )}
                         {transaction.can_complete && (
                             <TransactionCompletionDialog
@@ -243,7 +249,11 @@ export default function ShowTransaction({
                     </CardContent>
                 </Card>
 
-                <TransactionDistributionBreakdown transaction={transaction} />
+                {transaction.status !== 'cancelled' && (
+                    <TransactionDistributionBreakdown
+                        transaction={transaction}
+                    />
+                )}
 
                 <TransactionRecipientSummaryCard
                     transaction={transaction}

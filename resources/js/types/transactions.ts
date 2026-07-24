@@ -67,6 +67,7 @@ export type TransactionDetail = {
     status: TransactionStatus;
     can_edit: boolean;
     can_complete: boolean;
+    can_cancel: boolean;
     can_retry_distribution: boolean;
     can_redrive_distribution: boolean;
     total_revenue: string;

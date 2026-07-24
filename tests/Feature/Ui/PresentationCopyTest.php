@@ -9,14 +9,28 @@ class PresentationCopyTest extends TestCase
     public function test_login_and_application_shell_are_profitflow_branded(): void
     {
         $this->assertSame('ProfitFlow', config('app.name'));
+        $this->assertFileExists(
+            public_path('branding/profitflow-mark.png')
+        );
 
         $app = $this->source('js/app.tsx');
+        $logo = $this->source('js/components/app-logo-icon.tsx');
+        $applicationLogo = $this->source('js/components/app-logo.tsx');
         $layout = $this->source('js/layouts/auth/auth-simple-layout.tsx');
         $login = $this->source('js/pages/auth/login.tsx');
         $header = $this->source('js/components/app-header.tsx');
 
         $this->assertStringContainsString("'ProfitFlow'", $app);
         $this->assertStringNotContainsString('VITE_APP_NAME', $app);
+        $this->assertStringContainsString(
+            '/branding/profitflow-mark.png',
+            $logo
+        );
+        $this->assertStringContainsString('<img', $logo);
+        $this->assertStringNotContainsString('<svg', $logo);
+        $this->assertStringContainsString('AppLogoIcon', $applicationLogo);
+        $this->assertStringContainsString('ProfitFlow', $applicationLogo);
+        $this->assertStringContainsString('AppLogoIcon', $layout);
         $this->assertStringContainsString('ProfitFlow', $layout);
         $this->assertStringContainsString(
             'Dynamic Profit Distribution System',
@@ -32,6 +46,101 @@ class PresentationCopyTest extends TestCase
             $header
         );
         $this->assertStringNotContainsString('laravel.com/docs', $header);
+    }
+
+    public function test_login_exposes_only_the_email_and_password_entry_point(): void
+    {
+        $login = $this->source('js/pages/auth/login.tsx');
+
+        foreach ([
+            'Email address',
+            'PasswordInput',
+            'Remember me',
+            'Forgot your password?',
+            'Sign in',
+        ] as $expectedLoginControl) {
+            $this->assertStringContainsString(
+                $expectedLoginControl,
+                $login
+            );
+        }
+
+        $this->assertStringNotContainsString('PasskeyVerify', $login);
+        $this->assertStringNotContainsString(
+            'Sign in with a passkey',
+            $login
+        );
+        $this->assertStringNotContainsString(
+            'Or continue with email',
+            $login
+        );
+    }
+
+    public function test_passkey_confirmation_and_settings_interfaces_remain_available(): void
+    {
+        $this->assertStringContainsString(
+            'PasskeyVerify',
+            $this->source('js/pages/auth/confirm-password.tsx')
+        );
+        $this->assertStringContainsString(
+            'ManagePasskeys',
+            $this->source('js/pages/settings/security.tsx')
+        );
+    }
+
+    public function test_transaction_cancellation_ui_is_draft_only_and_business_facing(): void
+    {
+        $dialog = $this->source(
+            'js/components/transactions/transaction-cancellation-dialog.tsx'
+        );
+        $show = $this->source('js/pages/transactions/show.tsx');
+        $lifecycle = $this->source(
+            'js/components/transactions/transaction-lifecycle.tsx'
+        );
+
+        foreach ([
+            'Cancel this transaction?',
+            'This transaction will no longer be editable or available',
+            'It will remain in transaction history.',
+            'Keep Transaction',
+            'Cancel Transaction',
+        ] as $copy) {
+            $this->assertStringContainsString($copy, $dialog);
+        }
+
+        $this->assertStringContainsString(
+            'TransactionController.cancel.form',
+            $dialog
+        );
+        $this->assertStringContainsString(
+            'disabled={processing}',
+            $dialog
+        );
+        $this->assertStringContainsString(
+            'transaction.can_cancel',
+            $show
+        );
+        $this->assertStringContainsString(
+            "transaction.status !== 'cancelled'",
+            $show
+        );
+        $this->assertStringContainsString(
+            'This transaction was cancelled and can no longer be edited or completed.',
+            $lifecycle
+        );
+
+        foreach ([
+            'lifecycle transition',
+            'hard delete',
+            'soft delete',
+            'database record',
+            'immutable row',
+        ] as $technicalCopy) {
+            $this->assertStringNotContainsString(
+                $technicalCopy,
+                strtolower($dialog)
+            );
+        }
     }
 
     public function test_key_business_pages_use_business_facing_copy(): void

@@ -160,6 +160,7 @@ class InternalAdministratorAccessTest extends TestCase
             'transactions.edit' => ['GET', 'HEAD'],
             'transactions.update' => ['PATCH'],
             'transactions.complete' => ['POST'],
+            'transactions.cancel' => ['POST'],
             'transactions.retry-distribution' => ['POST'],
             'transactions.show' => ['GET', 'HEAD'],
         ];

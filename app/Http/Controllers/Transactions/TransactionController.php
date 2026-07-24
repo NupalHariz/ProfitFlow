@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers\Transactions;
 
+use App\Actions\Transactions\CancelTransaction;
 use App\Actions\Transactions\CompleteTransaction;
 use App\Actions\Transactions\CreateTransaction;
 use App\Actions\Transactions\RetryProfitDistribution;
 use App\Actions\Transactions\UpdateDraftTransaction;
 use App\Enums\TransactionStatus;
+use App\Exceptions\Transactions\InvalidTransactionCancellation;
 use App\Exceptions\Transactions\InvalidTransactionCompletion;
 use App\Exceptions\Transactions\InvalidTransactionDraft;
 use App\Exceptions\Transactions\MissingTransactionItemCategory;
 use App\Exceptions\Transactions\ProfitDistributionRetryNotAllowed;
 use App\Exceptions\Transactions\ProfitRuleNotFoundForTransactionItem;
+use App\Exceptions\Transactions\TransactionNotCancellable;
 use App\Exceptions\Transactions\TransactionNotCompletable;
 use App\Exceptions\Transactions\TransactionNotEditable;
 use App\Http\Controllers\Controller;
@@ -430,6 +433,29 @@ final class TransactionController extends Controller
         return to_route('transactions.show', $completed);
     }
 
+    public function cancel(
+        Transaction $transaction,
+        CancelTransaction $action
+    ): RedirectResponse {
+        try {
+            $cancelled = $action->execute($transaction);
+        } catch (
+            InvalidTransactionCancellation
+            |TransactionNotCancellable $exception
+        ) {
+            throw ValidationException::withMessages([
+                'transaction' => $exception->getMessage(),
+            ]);
+        }
+
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => 'Transaction cancelled.',
+        ]);
+
+        return to_route('transactions.show', $cancelled);
+    }
+
     public function retryDistribution(
         Transaction $transaction,
         RetryProfitDistribution $action
@@ -531,6 +557,7 @@ final class TransactionController extends Controller
             'status' => $status->value,
             'can_edit' => $status === TransactionStatus::Draft,
             'can_complete' => $status === TransactionStatus::Draft,
+            'can_cancel' => $status === TransactionStatus::Draft,
             'can_retry_distribution' => $status
                 === TransactionStatus::DistributionFailed,
             'can_redrive_distribution' => $status

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Dashboard;
 
+use App\Actions\Transactions\CancelTransaction;
 use App\Enums\TransactionStatus;
 use App\Queries\Dashboard\DashboardOverviewQuery;
 
@@ -182,5 +183,51 @@ class DashboardFinancialSummaryTest extends DashboardTestCase
             'distribution_failed' => 1,
             'cancelled' => 1,
         ], $summary);
+    }
+
+    public function test_cancelling_draft_moves_status_count_without_changing_financial_summary(): void
+    {
+        $draft = $this->createTransaction(attributes: [
+            'status' => TransactionStatus::Draft,
+            'total_revenue' => '999.00',
+            'total_production_cost' => '111.00',
+            'total_net_profit' => '888.00',
+        ]);
+        $distributed = $this->createTransaction(attributes: [
+            'status' => TransactionStatus::Distributed,
+            'total_revenue' => '500.00',
+            'total_production_cost' => '300.00',
+            'total_net_profit' => '200.00',
+        ]);
+        $this->distribution(
+            $distributed,
+            $this->createCompanyRecipient(),
+            '200.00'
+        );
+        $before = app(DashboardOverviewQuery::class)->get();
+
+        app(CancelTransaction::class)->execute($draft);
+
+        $after = app(DashboardOverviewQuery::class)->get();
+        $this->assertSame(
+            $before['financialSummary'],
+            $after['financialSummary']
+        );
+        $this->assertSame(
+            $before['financialSummary']['totalTransactions'],
+            $after['financialSummary']['totalTransactions']
+        );
+        $this->assertSame(
+            $before['financialSummary']['totalDistributedProfit'],
+            $after['financialSummary']['totalDistributedProfit']
+        );
+        $this->assertSame(
+            $before['statusSummary']['draft'] - 1,
+            $after['statusSummary']['draft']
+        );
+        $this->assertSame(
+            $before['statusSummary']['cancelled'] + 1,
+            $after['statusSummary']['cancelled']
+        );
     }
 }

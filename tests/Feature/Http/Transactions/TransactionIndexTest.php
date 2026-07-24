@@ -124,26 +124,27 @@ class TransactionIndexTest extends TransactionHttpTestCase
             );
     }
 
-    public function test_status_filter_uses_transaction_status(): void
+    public function test_cancelled_status_filter_uses_transaction_status(): void
     {
         $user = $this->user();
         $this->transaction($user, [
             'status' => TransactionStatus::Draft,
         ]);
         $this->transaction($user, [
-            'status' => TransactionStatus::Distributed,
+            'status' => TransactionStatus::Cancelled,
+            'cancelled_at' => now(),
         ]);
 
         $this->actingAs($user)
             ->get(route('transactions.index', [
-                'status' => TransactionStatus::Distributed->value,
+                'status' => TransactionStatus::Cancelled->value,
             ]))
             ->assertInertia(
                 fn (Assert $page) => $page
                     ->has('transactions.data', 1)
                     ->where(
                         'transactions.data.0.status',
-                        TransactionStatus::Distributed->value
+                        TransactionStatus::Cancelled->value
                     )
             );
     }

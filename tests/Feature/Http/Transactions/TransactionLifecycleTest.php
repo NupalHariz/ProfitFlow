@@ -24,7 +24,7 @@ class TransactionLifecycleTest extends TransactionHttpTestCase
         Queue::fake();
     }
 
-    public function test_guest_cannot_complete_or_retry(): void
+    public function test_guest_cannot_complete_cancel_or_retry(): void
     {
         $creator = $this->user();
         $transaction = $this->draft(
@@ -33,6 +33,8 @@ class TransactionLifecycleTest extends TransactionHttpTestCase
         );
 
         $this->post(route('transactions.complete', $transaction))
+            ->assertRedirect(route('login'));
+        $this->post(route('transactions.cancel', $transaction))
             ->assertRedirect(route('login'));
         $this->post(
             route('transactions.retry-distribution', $transaction)
@@ -67,6 +69,119 @@ class TransactionLifecycleTest extends TransactionHttpTestCase
                 route('transactions.retry-distribution', $transaction)
             )
             ->assertRedirect(route('verification.notice'));
+    }
+
+    public function test_unverified_user_cannot_cancel(): void
+    {
+        $creator = $this->user();
+        $transaction = $this->draft(
+            $creator,
+            Customer::factory()->create()
+        );
+        $unverified = User::factory()->unverified()->create();
+
+        $this->actingAs($unverified)
+            ->post(route('transactions.cancel', $transaction))
+            ->assertRedirect(route('verification.notice'));
+
+        $this->assertSame(
+            TransactionStatus::Draft,
+            $transaction->fresh()?->status
+        );
+    }
+
+    public function test_verified_user_can_cancel_draft_with_server_owned_status_and_timestamp(): void
+    {
+        $user = $this->user();
+        $transaction = $this->draft(
+            $user,
+            Customer::factory()->create()
+        );
+        $itemBefore = (array) DB::table('transaction_items')
+            ->where('transaction_id', $transaction->id)
+            ->firstOrFail();
+
+        $response = $this->actingAs($user)
+            ->post(route('transactions.cancel', $transaction), [
+                'status' => TransactionStatus::Distributed->value,
+                'cancelled_at' => '2000-01-01 00:00:00',
+                'completed_at' => now(),
+                'total_revenue' => '999999.99',
+            ]);
+
+        $fresh = $transaction->fresh();
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect(route('transactions.show', $transaction))
+            ->assertInertiaFlash(
+                'toast.message',
+                'Transaction cancelled.'
+            );
+        $this->assertSame(
+            TransactionStatus::Cancelled,
+            $fresh?->status
+        );
+        $this->assertNotNull($fresh?->cancelled_at);
+        $this->assertNull($fresh?->completed_at);
+        $this->assertSame('251.00', $fresh?->total_revenue);
+        $this->assertSame(
+            $itemBefore,
+            (array) DB::table('transaction_items')
+                ->where('transaction_id', $transaction->id)
+                ->firstOrFail()
+        );
+        $this->assertSame(0, $transaction->distributions()->count());
+        Queue::assertNothingPushed();
+    }
+
+    #[DataProvider('nonCancellableHttpStatuses')]
+    public function test_crafted_request_cannot_cancel_finalized_transaction(
+        TransactionStatus $status
+    ): void {
+        $user = $this->user();
+        $transaction = $this->createTransaction(
+            creator: $user,
+            attributes: ['status' => $status]
+        );
+        $before = (array) DB::table('transactions')
+            ->where('id', $transaction->id)
+            ->firstOrFail();
+
+        $this->actingAs($user)
+            ->from(route('transactions.show', $transaction))
+            ->post(route('transactions.cancel', $transaction), [
+                'status' => TransactionStatus::Cancelled->value,
+                'cancelled_at' => now(),
+            ])
+            ->assertRedirect(route('transactions.show', $transaction))
+            ->assertSessionHasErrors('transaction');
+
+        $this->assertSame(
+            $before,
+            (array) DB::table('transactions')
+                ->where('id', $transaction->id)
+                ->firstOrFail()
+        );
+        Queue::assertNothingPushed();
+    }
+
+    /**
+     * @return array<string, array{TransactionStatus}>
+     */
+    public static function nonCancellableHttpStatuses(): array
+    {
+        return [
+            'pending distribution' => [
+                TransactionStatus::PendingDistribution,
+            ],
+            'processing distribution' => [
+                TransactionStatus::ProcessingDistribution,
+            ],
+            'distributed' => [TransactionStatus::Distributed],
+            'distribution failed' => [
+                TransactionStatus::DistributionFailed,
+            ],
+        ];
     }
 
     public function test_verified_user_completes_through_the_action_with_server_owned_finances_and_rule(): void

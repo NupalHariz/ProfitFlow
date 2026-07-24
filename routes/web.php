@@ -219,6 +219,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 [TransactionController::class, 'complete']
             )->name('complete');
             Route::post(
+                '{transaction}/cancel',
+                [TransactionController::class, 'cancel']
+            )->name('cancel');
+            Route::post(
                 '{transaction}/retry-distribution',
                 [TransactionController::class, 'retryDistribution']
             )->name('retry-distribution');

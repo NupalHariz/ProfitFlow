@@ -75,7 +75,15 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                     Navigation menu
                                 </SheetTitle>
                                 <SheetHeader className="flex justify-start text-left">
-                                    <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
+                                    <Link
+                                        href={dashboard()}
+                                        className="flex items-center gap-2 font-semibold"
+                                    >
+                                        <span className="flex size-7 items-center justify-center rounded-md bg-neutral-950">
+                                            <AppLogoIcon className="size-7" />
+                                        </span>
+                                        <span>ProfitFlow</span>
+                                    </Link>
                                 </SheetHeader>
                                 <div className="flex h-full flex-1 flex-col space-y-4 p-4">
                                     <div className="flex h-full flex-col text-sm">
