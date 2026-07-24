@@ -2,17 +2,17 @@
 
 namespace Tests\Feature\Seeders;
 
+use App\Actions\ProfitSchemes\UpdateDraftProfitSchemeVersion;
 use App\Enums\ProfitRecipientType;
+use App\Exceptions\ProfitSchemes\ProfitSchemeVersionImmutable;
 use App\Models\Customer;
 use App\Models\Investor;
 use App\Models\Product;
 use App\Models\ProductCategory;
-use App\Models\ProfitDistribution;
 use App\Models\ProfitRecipient;
 use App\Models\ProfitScheme;
 use App\Models\ProfitSchemeAllocation;
 use App\Models\ProfitSchemeVersion;
-use App\Models\Transaction;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,121 +23,242 @@ class DatabaseSeederTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_seeder_creates_the_required_minimal_development_baseline(): void
+    public function test_fresh_seed_creates_coherent_master_data_and_verified_admin(): void
     {
         $this->seed(DatabaseSeeder::class);
 
         $admin = User::query()->where('email', 'admin@example.com')->sole();
-        $company = ProfitRecipient::query()->where('code', 'company')->sole();
-        $publishedVersions = ProfitSchemeVersion::query()
-            ->whereNotNull('published_at')
-            ->orderBy('id')
-            ->get();
 
-        $this->assertNotNull($admin->email_verified_at);
+        $this->assertSame(1, User::query()->count());
+        $this->assertSame('ProfitFlow Administrator', $admin->name);
+        $this->assertTrue($admin->hasVerifiedEmail());
         $this->assertTrue(Hash::check('password', $admin->password));
         $this->assertSame(3, ProductCategory::query()->count());
+        $this->assertSame([
+            'electronics',
+            'home-office',
+            'lifestyle',
+        ], ProductCategory::query()->orderBy('slug')->pluck('slug')->all());
         $this->assertSame(6, Product::query()->count());
         $this->assertSame(4, Customer::query()->count());
         $this->assertSame(3, Investor::query()->count());
+        $this->assertSame([
+            'Aria Pratama',
+            'Bima Santoso',
+            'Citra Lestari',
+        ], Investor::query()->orderBy('name')->pluck('name')->all());
+
+        foreach ($this->expectedProducts() as $sku => $expected) {
+            $product = Product::query()->where('sku', $sku)->sole();
+
+            $this->assertSame($expected['name'], $product->name);
+            $this->assertSame(
+                $expected['category'],
+                $product->category->slug
+            );
+            $this->assertSame(
+                $expected['selling_price'],
+                $product->default_selling_price
+            );
+            $this->assertSame(
+                $expected['production_cost'],
+                $product->default_production_cost
+            );
+        }
+
         $this->assertSame(4, ProfitRecipient::query()->count());
-        $this->assertSame(2, ProfitScheme::query()->count());
-        $this->assertCount(2, $publishedVersions);
-        $this->assertSame(6, ProfitSchemeAllocation::query()->count());
-        $this->assertSame(ProfitRecipientType::Company, $company->type);
-        $this->assertNull($company->investor_id);
-        $this->assertSame('Company', $company->display_name);
         $this->assertSame(
             3,
             ProfitRecipient::query()
                 ->where('type', ProfitRecipientType::Investor->value)
                 ->count()
         );
-        $this->assertSame(1, $publishedVersions->whereNull('product_category_id')->count());
-        $this->assertSame(1, $publishedVersions->whereNotNull('product_category_id')->count());
-        $this->assertSame(0, Transaction::query()->count());
-        $this->assertSame(0, ProfitDistribution::query()->count());
+
+        foreach (ProfitRecipient::query()
+            ->where('type', ProfitRecipientType::Investor->value)
+            ->get() as $recipient) {
+            $this->assertNotNull($recipient->investor_id);
+            $this->assertNotNull($recipient->investor);
+        }
+
+        $company = ProfitRecipient::query()->where('code', 'company')->sole();
+
+        $this->assertSame(ProfitRecipientType::Company, $company->type);
+        $this->assertNull($company->investor_id);
+        $this->assertSame('Company Reserve', $company->display_name);
+    }
+
+    public function test_demo_schemes_match_categories_and_published_allocations_are_exact(): void
+    {
+        $this->seed(DatabaseSeeder::class);
+
+        $this->assertSame(3, ProfitScheme::query()->count());
+        $this->assertSame([
+            'Electronics Growth',
+            'General Profit Sharing',
+            'Home & Office Growth',
+        ], ProfitScheme::query()->orderBy('name')->pluck('name')->all());
+
+        $electronics = ProfitScheme::query()
+            ->where('code', 'electronics-growth')
+            ->sole();
+        $homeOffice = ProfitScheme::query()
+            ->where('code', 'home-office-growth')
+            ->sole();
+        $general = ProfitScheme::query()
+            ->where('code', 'general-profit-sharing')
+            ->sole();
+        $electronicsVersions = $electronics->versions()
+            ->orderBy('version')
+            ->get();
+
+        $this->assertCount(2, $electronicsVersions);
+        $this->assertSame([1, 2], $electronicsVersions->pluck('version')->all());
+        $this->assertSame(
+            ['2026-07-01', '2026-07-15'],
+            $electronicsVersions
+                ->map(fn (ProfitSchemeVersion $version): string => $version
+                    ->effective_from->toDateString())
+                ->all()
+        );
+        $this->assertSame(
+            '2026-07-14',
+            $electronicsVersions[0]->effective_until?->toDateString()
+        );
+        $this->assertNull($electronicsVersions[1]->effective_until);
+        $this->assertSame(
+            ['electronics'],
+            $electronicsVersions
+                ->load('category')
+                ->pluck('category.slug')
+                ->unique()
+                ->values()
+                ->all()
+        );
+        $this->assertSame(
+            ['home-office'],
+            $homeOffice->versions()
+                ->with('category')
+                ->get()
+                ->pluck('category.slug')
+                ->unique()
+                ->values()
+                ->all()
+        );
+        $this->assertSame(
+            0,
+            $electronics->versions()
+                ->whereHas(
+                    'category',
+                    fn ($query) => $query->where('slug', 'home-office')
+                )
+                ->count()
+        );
+        $this->assertNull(
+            $general->versions()->sole()->product_category_id
+        );
+
+        $publishedVersions = ProfitSchemeVersion::query()
+            ->whereNotNull('published_at')
+            ->with('allocations.recipient')
+            ->orderBy('id')
+            ->get();
+
+        $this->assertCount(4, $publishedVersions);
+        $this->assertSame(11, ProfitSchemeAllocation::query()->count());
 
         foreach ($publishedVersions as $version) {
-            $total = $version->allocations()
-                ->selectRaw('SUM(percentage)::numeric(7, 4) AS aggregate')
-                ->value('aggregate');
+            $this->assertNotEmpty($version->allocations);
+            $this->assertSame(
+                $version->allocations->count(),
+                $version->allocations
+                    ->pluck('profit_recipient_id')
+                    ->unique()
+                    ->count()
+            );
+            $this->assertSame(
+                '100.0000',
+                $version->allocations()
+                    ->selectRaw(
+                        'SUM(percentage)::numeric(7, 4) AS aggregate'
+                    )
+                    ->value('aggregate')
+            );
 
-            $this->assertSame('100.0000', $total);
+            foreach ($version->allocations as $allocation) {
+                $recipient = $allocation->recipient;
+
+                $this->assertNotNull($recipient);
+
+                if ($recipient->type === ProfitRecipientType::Investor) {
+                    $this->assertNotNull($recipient->investor_id);
+                } else {
+                    $this->assertNull($recipient->investor_id);
+                }
+            }
         }
     }
 
-    public function test_seeder_is_idempotent_for_all_canonical_records(): void
+    public function test_published_demo_versions_use_the_existing_immutability_guard(): void
     {
         $this->seed(DatabaseSeeder::class);
-        $before = $this->canonicalCounts();
 
-        $this->seed(DatabaseSeeder::class);
-        $after = $this->canonicalCounts();
+        $version = ProfitSchemeVersion::query()
+            ->whereNotNull('published_at')
+            ->firstOrFail();
 
-        $this->assertSame($before, $after);
-        $this->assertSame([
-            'users' => 1,
-            'categories' => 3,
-            'products' => 6,
-            'customers' => 4,
-            'investors' => 3,
-            'recipients' => 4,
-            'schemes' => 2,
-            'versions' => 2,
-            'allocations' => 6,
-        ], $after);
+        $this->expectException(ProfitSchemeVersionImmutable::class);
+
+        app(UpdateDraftProfitSchemeVersion::class)->execute($version, []);
     }
 
     /**
-     * @return array<string, int>
+     * @return array<string, array{
+     *     name: string,
+     *     category: string,
+     *     selling_price: string,
+     *     production_cost: string
+     * }>
      */
-    private function canonicalCounts(): array
+    private function expectedProducts(): array
     {
-        $schemeIds = ProfitScheme::query()
-            ->whereIn('code', ['general-profit-sharing', 'electronics-growth'])
-            ->pluck('id');
-        $versionIds = ProfitSchemeVersion::query()
-            ->whereIn('profit_scheme_id', $schemeIds)
-            ->pluck('id');
-
         return [
-            'users' => User::query()->where('email', 'admin@example.com')->count(),
-            'categories' => ProductCategory::query()->whereIn('slug', [
-                'electronics',
-                'home-office',
-                'professional-services',
-            ])->count(),
-            'products' => Product::query()->whereIn('sku', [
-                'ELEC-ROUTER-01',
-                'ELEC-LAPTOP-01',
-                'OFFICE-CHAIR-01',
-                'OFFICE-DESK-01',
-                'SERVICE-SETUP-01',
-                'SERVICE-TRAINING-01',
-            ])->count(),
-            'customers' => Customer::query()->whereIn('email', [
-                'purchasing@nusantara-retail.test',
-                'operations@mitra-digital.test',
-                'finance@solusi-kerja.test',
-                'admin@maju-bersama.test',
-            ])->count(),
-            'investors' => Investor::query()->whereIn('email', [
-                'aria.investor@example.com',
-                'bima.investor@example.com',
-                'citra.investor@example.com',
-            ])->count(),
-            'recipients' => ProfitRecipient::query()->whereIn('code', [
-                'investor-aria',
-                'investor-bima',
-                'investor-citra',
-                'company',
-            ])->count(),
-            'schemes' => $schemeIds->count(),
-            'versions' => $versionIds->count(),
-            'allocations' => ProfitSchemeAllocation::query()
-                ->whereIn('profit_scheme_version_id', $versionIds)
-                ->count(),
+            'ELEC-LAPTOP-01' => [
+                'name' => 'Office Laptop',
+                'category' => 'electronics',
+                'selling_price' => '12500000.00',
+                'production_cost' => '9800000.00',
+            ],
+            'ELEC-HEADPHONES-01' => [
+                'name' => 'Wireless Headphones',
+                'category' => 'electronics',
+                'selling_price' => '1800000.00',
+                'production_cost' => '1100000.00',
+            ],
+            'OFFICE-DESK-01' => [
+                'name' => 'Adjustable Standing Desk',
+                'category' => 'home-office',
+                'selling_price' => '5500000.00',
+                'production_cost' => '3900000.00',
+            ],
+            'OFFICE-CHAIR-01' => [
+                'name' => 'Ergonomic Office Chair',
+                'category' => 'home-office',
+                'selling_price' => '3200000.00',
+                'production_cost' => '2200000.00',
+            ],
+            'LIFE-BACKPACK-01' => [
+                'name' => 'Travel Backpack',
+                'category' => 'lifestyle',
+                'selling_price' => '1200000.00',
+                'production_cost' => '650000.00',
+            ],
+            'LIFE-BOTTLE-01' => [
+                'name' => 'Smart Water Bottle',
+                'category' => 'lifestyle',
+                'selling_price' => '650000.00',
+                'production_cost' => '280000.00',
+            ],
         ];
     }
 }
