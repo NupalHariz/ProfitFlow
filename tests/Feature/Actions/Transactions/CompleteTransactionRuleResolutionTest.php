@@ -2,8 +2,12 @@
 
 namespace Tests\Feature\Actions\Transactions;
 
+use App\Enums\TransactionStatus;
+use App\Exceptions\Transactions\ProfitRuleNotFoundForTransactionItem;
+use App\Jobs\DistributeTransactionProfit;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 
 class CompleteTransactionRuleResolutionTest extends TransactionActionTestCase
 {
@@ -74,13 +78,90 @@ class CompleteTransactionRuleResolutionTest extends TransactionActionTestCase
         );
     }
 
-    public function test_a_general_rule_can_be_frozen_for_a_categorized_item(): void
+    public function test_category_null_rule_cannot_be_frozen_for_a_categorized_item(): void
     {
-        $product = $this->createProduct(attributes: [
+        $category = $this->createCategory();
+        $product = $this->createProduct($category, [
             'default_selling_price' => '10.00',
             'default_production_cost' => '1.00',
         ]);
-        $generalRule = $this->createPublishedRule();
+        $scheme = $this->createScheme($this->creator);
+        $categoryNullRule = $this->createSchemeVersion(
+            $scheme,
+            $this->creator,
+            [
+                'product_category_id' => null,
+                'effective_from' => '2026-01-01',
+                'is_active' => true,
+                'published_at' => '2026-01-01 00:00:00',
+            ]
+        );
+        $this->createAllocation(
+            $categoryNullRule,
+            $this->createCompanyRecipient()
+        );
+        $transaction = $this->createDraft(
+            $this->validPayload($product)
+        );
+
+        try {
+            $this->complete($transaction);
+            $this->fail('Expected category-null rule to be ignored.');
+        } catch (ProfitRuleNotFoundForTransactionItem) {
+            // Expected.
+        }
+
+        $fresh = $transaction->fresh();
+
+        $this->assertNotNull($fresh);
+        $this->assertSame(TransactionStatus::Draft, $fresh->status);
+        $this->assertNull(
+            $fresh->items()->sole()->applied_profit_scheme_version_id
+        );
+        $this->assertDatabaseCount('profit_distributions', 0);
+        Queue::assertNotPushed(DistributeTransactionProfit::class);
+    }
+
+    public function test_completion_freezes_current_version_before_comparing_cross_scheme_priority(): void
+    {
+        $category = $this->createCategory();
+        $product = $this->createProduct($category, [
+            'default_selling_price' => '200.00',
+            'default_production_cost' => '100.00',
+        ]);
+        $scheme = $this->createScheme($this->creator);
+        $older = $this->createSchemeVersion(
+            $scheme,
+            $this->creator,
+            [
+                'version' => 1,
+                'product_category_id' => $category->id,
+                'effective_from' => '2026-01-01',
+                'priority' => 100,
+                'is_active' => true,
+                'published_at' => '2026-01-01 00:00:00',
+            ]
+        );
+        $current = $this->createSchemeVersion(
+            $scheme,
+            $this->creator,
+            [
+                'version' => 2,
+                'product_category_id' => $category->id,
+                'effective_from' => '2026-01-01',
+                'priority' => 0,
+                'is_active' => true,
+                'published_at' => '2026-02-01 00:00:00',
+            ]
+        );
+        $this->createAllocation(
+            $older,
+            $this->createCompanyRecipient()
+        );
+        $this->createAllocation(
+            $current,
+            $this->createCompanyRecipient()
+        );
         $transaction = $this->createDraft(
             $this->validPayload($product)
         );
@@ -88,7 +169,7 @@ class CompleteTransactionRuleResolutionTest extends TransactionActionTestCase
         $completed = $this->complete($transaction);
 
         $this->assertSame(
-            $generalRule->id,
+            $current->id,
             $completed->items
                 ->sole()
                 ->applied_profit_scheme_version_id
@@ -106,9 +187,6 @@ class CompleteTransactionRuleResolutionTest extends TransactionActionTestCase
         $secondProduct = $this->createProduct($secondCategory, [
             'default_selling_price' => '75.00',
             'default_production_cost' => '25.00',
-        ]);
-        $general = $this->createPublishedRule(attributes: [
-            'priority' => 1,
         ]);
         $firstRule = $this->createPublishedRule($firstCategory, [
             'priority' => 10,
@@ -130,12 +208,6 @@ class CompleteTransactionRuleResolutionTest extends TransactionActionTestCase
             $completed->items
                 ->pluck('applied_profit_scheme_version_id')
                 ->all()
-        );
-        $this->assertNotSame(
-            $general->id,
-            $completed->items
-                ->first()
-                ?->applied_profit_scheme_version_id
         );
     }
 

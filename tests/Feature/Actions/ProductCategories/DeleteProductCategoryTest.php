@@ -115,7 +115,6 @@ class DeleteProductCategoryTest extends ProductCategoryActionTestCase
             ->for($category, 'category')
             ->create();
         $version = ProfitSchemeVersion::factory()
-            ->general()
             ->published()
             ->create();
         $item = TransactionItem::factory()

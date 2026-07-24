@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Customers;
 
+use App\Actions\Customers\CreateCustomer;
 use App\Enums\TransactionStatus;
 use App\Models\Customer;
 use App\Models\Transaction;
@@ -32,7 +33,7 @@ class CustomerManagementTest extends CustomerHttpTestCase
             'finance@nusantara.test',
             $customer->email
         );
-        $this->assertSame('+62215550101', $customer->phone);
+        $this->assertSame('0215550101', $customer->phone);
         $this->assertSame('Jakarta', $customer->address);
     }
 
@@ -52,6 +53,28 @@ class CustomerManagementTest extends CustomerHttpTestCase
         $this->assertNull($customer->email);
         $this->assertNull($customer->phone);
         $this->assertNull($customer->address);
+    }
+
+    public function test_form_request_and_direct_action_share_local_phone_normalization(): void
+    {
+        $this->actingAs($this->user())
+            ->post(route('customers.store'), $this->customerPayload([
+                'phone' => '+62 812 3456 7890',
+            ]))
+            ->assertSessionHasNoErrors();
+        $direct = app(CreateCustomer::class)->execute([
+            'name' => 'Direct Action Customer',
+            'phone' => '+62 812 3456 7890',
+        ]);
+
+        $this->assertSame(
+            '081234567890',
+            Customer::query()
+                ->where('name', 'PT Nusantara Retail')
+                ->sole()
+                ->phone
+        );
+        $this->assertSame('081234567890', $direct->phone);
     }
 
     #[DataProvider('invalidNames')]
@@ -165,7 +188,7 @@ class CustomerManagementTest extends CustomerHttpTestCase
         $customer->refresh();
         $this->assertSame('Updated Name', $customer->name);
         $this->assertSame('updated@example.com', $customer->email);
-        $this->assertSame('+6281234567890', $customer->phone);
+        $this->assertSame('081234567890', $customer->phone);
         $this->assertSame('Bandung', $customer->address);
     }
 

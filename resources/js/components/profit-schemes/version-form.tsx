@@ -13,6 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { formatEditableDecimal } from '@/lib/money';
 import type {
     ProfitSchemeCategoryLookup,
     ProfitSchemeVersionFormData,
@@ -36,7 +37,7 @@ export default function VersionForm({
     disabled = false,
 }: Props) {
     const [categoryId, setCategoryId] = useState(
-        version?.product_category_id?.toString() ?? 'general',
+        version?.product_category_id?.toString() ?? '',
     );
     const [isActive, setIsActive] = useState(version?.is_active ?? true);
 
@@ -53,23 +54,23 @@ export default function VersionForm({
 
                     <Card className="border-dashed bg-muted/20 shadow-none">
                         <CardContent className="text-sm text-muted-foreground">
-                            Leave category empty to apply this rule to all
-                            categories. Profit limits are optional.
-                            Higher-priority rules are applied first.
+                            Choose the Product Category this rule applies to.
+                            Profit limits are optional. A new published version
+                            replaces earlier versions in this Scheme for its
+                            effective dates. Higher-priority Schemes are
+                            selected first when more than one Scheme matches.
                         </CardContent>
                     </Card>
 
                     <div className="grid gap-5 md:grid-cols-2">
                         <div className="grid gap-2 md:col-span-2">
-                            <Label htmlFor="product_category_id">
-                                Product category
+                            <Label htmlFor="product_category_id" required>
+                                Category
                             </Label>
                             <input
                                 type="hidden"
                                 name="product_category_id"
-                                value={
-                                    categoryId === 'general' ? '' : categoryId
-                                }
+                                value={categoryId}
                             />
                             <Select
                                 value={categoryId}
@@ -80,12 +81,9 @@ export default function VersionForm({
                                     id="product_category_id"
                                     className="w-full"
                                 >
-                                    <SelectValue placeholder="General" />
+                                    <SelectValue placeholder="Select a category" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="general">
-                                        General — all categories
-                                    </SelectItem>
                                     {categories.map((category) => (
                                         <SelectItem
                                             key={category.id}
@@ -114,7 +112,13 @@ export default function VersionForm({
                                 name="minimum_profit"
                                 inputMode="decimal"
                                 placeholder="Open-ended"
-                                defaultValue={version?.minimum_profit ?? ''}
+                                defaultValue={
+                                    version?.minimum_profit
+                                        ? formatEditableDecimal(
+                                              version.minimum_profit,
+                                          )
+                                        : ''
+                                }
                                 disabled={disabled}
                             />
                             <InputError message={errors.minimum_profit} />
@@ -129,14 +133,20 @@ export default function VersionForm({
                                 name="maximum_profit"
                                 inputMode="decimal"
                                 placeholder="Open-ended"
-                                defaultValue={version?.maximum_profit ?? ''}
+                                defaultValue={
+                                    version?.maximum_profit
+                                        ? formatEditableDecimal(
+                                              version.maximum_profit,
+                                          )
+                                        : ''
+                                }
                                 disabled={disabled}
                             />
                             <InputError message={errors.maximum_profit} />
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="effective_from">
+                            <Label htmlFor="effective_from" required>
                                 Effective from
                             </Label>
                             <Input
@@ -168,7 +178,9 @@ export default function VersionForm({
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="priority">Priority</Label>
+                            <Label htmlFor="priority" required>
+                                Priority
+                            </Label>
                             <Input
                                 id="priority"
                                 name="priority"

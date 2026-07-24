@@ -27,7 +27,7 @@ class InvestorManagementTest extends InvestorHttpTestCase
             ->assertRedirect(route('investors.show', $investor));
         $this->assertSame('Naufal Pratama', $investor->name);
         $this->assertSame('naufal@example.test', $investor->email);
-        $this->assertSame('+6281200001001', $investor->phone);
+        $this->assertSame('081200001001', $investor->phone);
         $this->assertFalse($investor->is_active);
         $this->assertDatabaseCount('profit_recipients', 0);
     }
@@ -150,7 +150,7 @@ class InvestorManagementTest extends InvestorHttpTestCase
         $investor->refresh();
         $this->assertSame('Updated Investor', $investor->name);
         $this->assertSame('updated@example.test', $investor->email);
-        $this->assertSame('+6281345678901', $investor->phone);
+        $this->assertSame('081345678901', $investor->phone);
         $this->assertFalse($investor->is_active);
         $this->assertEquals(
             $recipientState,

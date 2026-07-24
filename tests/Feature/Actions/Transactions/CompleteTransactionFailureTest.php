@@ -277,7 +277,7 @@ class CompleteTransactionFailureTest extends TransactionActionTestCase
                 ['product_id' => $second->id, 'quantity' => 1],
             ])
         );
-        $this->createPublishedRule();
+        $this->createPublishedRule($this->createCategory());
         DB::table('transaction_items')
             ->where('transaction_id', $transaction->id)
             ->where('product_id', $second->id)

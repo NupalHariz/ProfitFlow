@@ -77,6 +77,9 @@ class ProfitSchemeVersionController extends Controller
     ): Response {
         $version->loadCount('appliedTransactionItems');
         $version->load([
+            'category' => fn ($query) => $query
+                ->withTrashed()
+                ->select(['id', 'name', 'is_active', 'deleted_at']),
             'allocations' => fn ($query) => $query
                 ->select([
                     'id',
@@ -403,6 +406,9 @@ class ProfitSchemeVersionController extends Controller
             'is_ready_to_publish' => ! $published
                 && ! $historicallyReferenced
                 && $version->is_active
+                && $version->product_category_id !== null
+                && $version->category !== null
+                && ! $version->category->trashed()
                 && $unavailableAllocationCount === 0
                 && $totalUnits === FixedDecimal::PERCENTAGE_TOTAL_UNITS,
             'allocations' => $version->allocations

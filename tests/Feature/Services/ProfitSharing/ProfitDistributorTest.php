@@ -334,7 +334,7 @@ class ProfitDistributorTest extends ProfitDistributionTestCase
 
         $resolved = app(ProfitRuleResolver::class)->resolve(
             '2026-07-23',
-            null,
+            $frozen['version']->product_category_id,
             '80.00'
         );
 

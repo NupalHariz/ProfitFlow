@@ -5,6 +5,7 @@ namespace Tests\Feature\Actions\ProfitSchemes;
 use App\Actions\ProfitSchemes\CreateProfitSchemeVersion;
 use App\Actions\ProfitSchemes\PublishProfitSchemeVersion;
 use App\Actions\ProfitSchemes\ReplaceDraftProfitSchemeAllocations;
+use App\Models\ProductCategory;
 use App\Models\ProfitRecipient;
 use App\Models\ProfitScheme;
 use App\Models\ProfitSchemeVersion;
@@ -23,8 +24,13 @@ abstract class ProfitSchemeActionTestCase extends TestCase
      */
     protected function validVersionData(array $overrides = []): array
     {
+        if (! array_key_exists('product_category_id', $overrides)) {
+            $overrides['product_category_id'] = ProductCategory::factory()
+                ->create()
+                ->id;
+        }
+
         return array_replace([
-            'product_category_id' => null,
             'minimum_profit' => null,
             'maximum_profit' => null,
             'effective_from' => '2026-01-01',

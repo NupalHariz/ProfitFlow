@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\ProfitSchemes;
 
 use App\Models\ProfitSchemeAllocation;
+use App\Models\ProfitSchemeVersion;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -273,6 +274,41 @@ class ProfitSchemeAllocationAndPublicationTest extends ProfitSchemeHttpTestCase
         $this->assertNotNull($version->fresh()->published_at);
     }
 
+    public function test_category_null_draft_is_never_ready_to_publish(): void
+    {
+        $user = $this->user();
+        $scheme = $this->scheme($user);
+        $version = ProfitSchemeVersion::factory()
+            ->for($scheme, 'scheme')
+            ->create([
+                'product_category_id' => null,
+                'created_by_user_id' => $user->id,
+            ]);
+        $recipient = $this->recipient();
+        $this->allocations($version, [[
+            'profit_recipient_id' => $recipient->id,
+            'percentage' => '100.0000',
+        ]]);
+
+        foreach ([
+            route('profit-schemes.versions.edit', [
+                'scheme' => $scheme,
+                'version' => $version,
+            ]) => 'version',
+            route('profit-schemes.show', $scheme) => 'scheme.versions.0',
+        ] as $url => $versionPath) {
+            $this->actingAs($user)
+                ->get($url)
+                ->assertInertia(
+                    fn (Assert $page) => $page
+                        ->where(
+                            "{$versionPath}.is_ready_to_publish",
+                            false
+                        )
+                );
+        }
+    }
+
     public function test_below_and_above_one_hundred_publication_return_validation_errors(): void
     {
         $user = $this->user();
@@ -420,7 +456,11 @@ class ProfitSchemeAllocationAndPublicationTest extends ProfitSchemeHttpTestCase
             ->patch(route('profit-schemes.versions.update', [
                 'scheme' => $scheme,
                 'version' => $version,
-            ]), ['priority' => 999])
+            ]), [
+                'product_category_id' => $version
+                    ->product_category_id,
+                'priority' => 999,
+            ])
             ->assertSessionHasErrors('version');
         $this->actingAs($user)
             ->put(route('profit-schemes.versions.allocations.update', [

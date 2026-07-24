@@ -133,7 +133,9 @@ class CancelTransactionTest extends TransactionActionTestCase
     public function test_draft_with_frozen_rule_data_is_rejected_without_mutation(): void
     {
         $transaction = $this->createDraft($this->validPayload());
-        $version = $this->createPublishedRule();
+        $version = $this->createPublishedRule(
+            $this->createCategory()
+        );
         $item = $transaction->items()->sole();
         $item->update([
             'applied_profit_scheme_version_id' => $version->id,
@@ -177,7 +179,9 @@ class CancelTransactionTest extends TransactionActionTestCase
     {
         $transaction = $this->createDraft($this->validPayload());
         $item = $transaction->items()->sole();
-        $version = $this->createPublishedRule();
+        $version = $this->createPublishedRule(
+            $this->createCategory()
+        );
         $distribution = $this->createDistribution(
             $item,
             $version,

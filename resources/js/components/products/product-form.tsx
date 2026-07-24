@@ -16,6 +16,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { formatEditableDecimal } from '@/lib/money';
 import type { ProductCategoryOption, ProductFormData } from '@/types';
 
 type Props =
@@ -34,11 +35,9 @@ type Props =
 
 export default function ProductForm({ mode, product, categories }: Props) {
     const [categoryId, setCategoryId] = useState(
-        product
+        product?.product_category_id
             ? String(product.product_category_id)
-            : categories[0]
-              ? String(categories[0].id)
-              : '',
+            : '',
     );
     const [isActive, setIsActive] = useState(true);
     const form =
@@ -84,7 +83,9 @@ export default function ProductForm({ mode, product, categories }: Props) {
                     )}
 
                     <div className="grid gap-2">
-                        <Label htmlFor="product_category_id">Category</Label>
+                        <Label htmlFor="product_category_id" required>
+                            Category
+                        </Label>
                         <input
                             type="hidden"
                             name="product_category_id"
@@ -120,7 +121,9 @@ export default function ProductForm({ mode, product, categories }: Props) {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="name">Name</Label>
+                            <Label htmlFor="name" required>
+                                Name
+                            </Label>
                             <Input
                                 id="name"
                                 name="name"
@@ -134,7 +137,9 @@ export default function ProductForm({ mode, product, categories }: Props) {
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="sku">SKU</Label>
+                            <Label htmlFor="sku" required>
+                                SKU
+                            </Label>
                             <Input
                                 id="sku"
                                 name="sku"
@@ -145,7 +150,7 @@ export default function ProductForm({ mode, product, categories }: Props) {
                                 className="font-mono"
                             />
                             <p className="text-xs text-muted-foreground">
-                                The SKU must be unique and is case-sensitive.
+                                Use a unique SKU for this product.
                             </p>
                             <InputError message={errors.sku} />
                         </div>
@@ -153,50 +158,60 @@ export default function ProductForm({ mode, product, categories }: Props) {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="default_selling_price">
+                            <Label htmlFor="default_selling_price" required>
                                 Default selling price
                             </Label>
                             <Input
                                 id="default_selling_price"
                                 name="default_selling_price"
                                 defaultValue={
-                                    product?.default_selling_price ?? ''
+                                    product
+                                        ? formatEditableDecimal(
+                                              product.default_selling_price,
+                                          )
+                                        : ''
                                 }
                                 required
                                 inputMode="decimal"
                                 autoComplete="off"
-                                placeholder="150000.00"
+                                placeholder="150000"
                             />
                             <InputError
                                 message={errors.default_selling_price}
                             />
+                            <p className="text-xs text-muted-foreground">
+                                Used as the default selling price in draft
+                                transactions.
+                            </p>
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="default_production_cost">
+                            <Label htmlFor="default_production_cost" required>
                                 Default production cost
                             </Label>
                             <Input
                                 id="default_production_cost"
                                 name="default_production_cost"
                                 defaultValue={
-                                    product?.default_production_cost ?? ''
+                                    product
+                                        ? formatEditableDecimal(
+                                              product.default_production_cost,
+                                          )
+                                        : ''
                                 }
                                 required
                                 inputMode="decimal"
                                 autoComplete="off"
-                                placeholder="90000.00"
+                                placeholder="90000"
                             />
                             <InputError
                                 message={errors.default_production_cost}
                             />
+                            <p className="text-xs text-muted-foreground">
+                                Used to calculate profit in draft transactions.
+                            </p>
                         </div>
                     </div>
-
-                    <p className="text-xs text-muted-foreground">
-                        Enter non-negative values with up to two decimal places.
-                        These defaults apply to new and edited transactions.
-                    </p>
 
                     <div className="grid gap-2">
                         <Label htmlFor="description">Description</Label>
@@ -230,8 +245,8 @@ export default function ProductForm({ mode, product, categories }: Props) {
                                         Active product
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Selection in transaction drafts also
-                                        requires the category to be active.
+                                        Available for transactions when its
+                                        category is also active.
                                     </p>
                                 </div>
                             </div>

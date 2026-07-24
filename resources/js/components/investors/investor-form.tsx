@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { formatIndonesianPhoneNumber } from '@/lib/phone';
 import type { InvestorFormData } from '@/types';
 
 type Props =
@@ -33,7 +34,9 @@ export default function InvestorForm({ mode, investor }: Props) {
                     <InputError message={errors.investor} />
 
                     <div className="grid gap-2">
-                        <Label htmlFor="name">Name</Label>
+                        <Label htmlFor="name" required>
+                            Name
+                        </Label>
                         <Input
                             id="name"
                             name="name"
@@ -66,7 +69,11 @@ export default function InvestorForm({ mode, investor }: Props) {
                                 id="phone"
                                 name="phone"
                                 type="tel"
-                                defaultValue={investor?.phone ?? ''}
+                                defaultValue={
+                                    formatIndonesianPhoneNumber(
+                                        investor?.phone ?? null,
+                                    ) ?? ''
+                                }
                                 maxLength={40}
                                 placeholder="0812 3456 7890"
                             />
@@ -94,8 +101,8 @@ export default function InvestorForm({ mode, investor }: Props) {
                                         Active Investor
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Active Investors remain available for
-                                        management.
+                                        Active Investors can be linked to Profit
+                                        Recipients.
                                     </p>
                                 </div>
                             </div>
@@ -105,12 +112,12 @@ export default function InvestorForm({ mode, investor }: Props) {
 
                     <Alert>
                         <AlertTitle>
-                            Investor and Profit Recipient are separate
+                            Investor and Profit Recipient have different roles
                         </AlertTitle>
                         <AlertDescription>
-                            {mode === 'create'
-                                ? 'Create the Profit Recipient separately if this Investor will receive an allocation.'
-                                : 'Contact changes do not change the linked Profit Recipient.'}
+                            An Investor represents the owner of the funds.
+                            Create a Profit Recipient to include them in a
+                            profit-sharing scheme.
                         </AlertDescription>
                     </Alert>
 

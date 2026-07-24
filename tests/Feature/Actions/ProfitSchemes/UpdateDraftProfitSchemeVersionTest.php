@@ -147,6 +147,8 @@ class UpdateDraftProfitSchemeVersionTest extends ProfitSchemeActionTestCase
             app(UpdateDraftProfitSchemeVersion::class)->execute(
                 $version,
                 [
+                    'product_category_id' => $version
+                        ->product_category_id,
                     'minimum_profit' => '101.00',
                     'priority' => 99,
                 ]
@@ -163,5 +165,33 @@ class UpdateDraftProfitSchemeVersionTest extends ProfitSchemeActionTestCase
         $this->assertSame('100.00', $fresh->maximum_profit);
         $this->assertSame(7, $fresh->priority);
         $this->assertTrue($originalUpdatedAt->equalTo($fresh->updated_at));
+    }
+
+    public function test_draft_update_requires_category_input(): void
+    {
+        $version = $this->createDraftVersion();
+
+        $this->expectException(InvalidProfitSchemeVersion::class);
+        $this->expectExceptionMessage(
+            'field [product_category_id] is required'
+        );
+
+        app(UpdateDraftProfitSchemeVersion::class)->execute(
+            $version,
+            ['priority' => 99]
+        );
+    }
+
+    public function test_draft_update_rejects_null_category(): void
+    {
+        $version = $this->createDraftVersion();
+
+        $this->expectException(InvalidProfitSchemeVersion::class);
+        $this->expectExceptionMessage('Product category is required');
+
+        app(UpdateDraftProfitSchemeVersion::class)->execute(
+            $version,
+            ['product_category_id' => null]
+        );
     }
 }

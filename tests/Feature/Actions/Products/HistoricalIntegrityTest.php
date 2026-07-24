@@ -27,7 +27,6 @@ class Stage3AHistoricalIntegrityTest extends ProductActionTestCase
         ]);
         $product = $this->createManagedProduct($originalCategory);
         $version = ProfitSchemeVersion::factory()
-            ->general()
             ->published()
             ->create();
         $transaction = Transaction::factory()

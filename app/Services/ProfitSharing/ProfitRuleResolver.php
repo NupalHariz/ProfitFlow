@@ -6,6 +6,8 @@ use App\Models\ProfitSchemeVersion;
 use Carbon\CarbonInterface;
 use DateTimeImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 final class ProfitRuleResolver
@@ -20,7 +22,35 @@ final class ProfitRuleResolver
             FixedDecimal::moneyToMinorUnits($itemNetProfit)
         );
 
+        if ($productCategoryId === null) {
+            return null;
+        }
+
+        $currentVersionIds = DB::table(
+            'profit_scheme_versions as current_versions'
+        )
+            ->selectRaw(
+                'DISTINCT ON (current_versions.profit_scheme_id) current_versions.id'
+            )
+            ->whereNotNull('current_versions.published_at')
+            ->where('current_versions.effective_from', '<=', $date)
+            ->where(
+                static function (QueryBuilder $query) use ($date): void {
+                    $query
+                        ->whereNull('current_versions.effective_until')
+                        ->orWhere(
+                            'current_versions.effective_until',
+                            '>=',
+                            $date
+                        );
+                }
+            )
+            ->orderBy('current_versions.profit_scheme_id')
+            ->orderByDesc('current_versions.version')
+            ->orderByDesc('current_versions.id');
+
         return ProfitSchemeVersion::query()
+            ->whereIn('profit_scheme_versions.id', $currentVersionIds)
             ->whereRelation('scheme', 'is_active', true)
             ->where('is_active', true)
             ->whereNotNull('published_at')
@@ -30,18 +60,7 @@ final class ProfitRuleResolver
                     ->whereNull('effective_until')
                     ->orWhere('effective_until', '>=', $date);
             })
-            ->where(
-                static function (Builder $query) use ($productCategoryId): void {
-                    $query->whereNull('product_category_id');
-
-                    if ($productCategoryId !== null) {
-                        $query->orWhere(
-                            'product_category_id',
-                            $productCategoryId
-                        );
-                    }
-                }
-            )
+            ->where('product_category_id', $productCategoryId)
             ->where(static function (Builder $query) use ($profit): void {
                 $query
                     ->whereNull('minimum_profit')

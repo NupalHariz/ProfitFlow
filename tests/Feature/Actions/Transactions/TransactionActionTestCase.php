@@ -97,7 +97,7 @@ abstract class TransactionActionTestCase extends TestCase
      * @param  array<string, mixed>  $attributes
      */
     protected function createPublishedRule(
-        ?ProductCategory $category = null,
+        ProductCategory $category,
         array $attributes = []
     ): ProfitSchemeVersion {
         $scheme = $this->createScheme($this->creator);
@@ -105,7 +105,7 @@ abstract class TransactionActionTestCase extends TestCase
             $scheme,
             $this->creator,
             array_merge([
-                'product_category_id' => $category?->id,
+                'product_category_id' => $category->id,
                 'minimum_profit' => null,
                 'maximum_profit' => null,
                 'effective_from' => '2026-01-01',

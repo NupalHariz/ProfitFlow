@@ -4,6 +4,7 @@ namespace Tests\Feature\Actions\ProfitSchemes;
 
 use App\Actions\ProfitSchemes\CreateProfitSchemeVersion;
 use App\Exceptions\ProfitSchemes\InvalidProfitSchemeVersion;
+use App\Models\ProductCategory;
 use App\Models\ProfitScheme;
 use App\Models\ProfitSchemeVersion;
 use App\Models\User;
@@ -66,17 +67,49 @@ class CreateProfitSchemeVersionTest extends ProfitSchemeActionTestCase
         $this->assertSame($creator->id, $version->created_by_user_id);
     }
 
-    public function test_nullable_category_and_open_profit_ranges_are_supported(): void
+    public function test_required_category_and_open_profit_ranges_are_supported(): void
     {
+        $category = ProductCategory::factory()->create();
         $version = $this->createDraftVersion(overrides: [
-            'product_category_id' => null,
+            'product_category_id' => $category->id,
             'minimum_profit' => null,
             'maximum_profit' => null,
         ]);
 
-        $this->assertNull($version->product_category_id);
+        $this->assertSame($category->id, $version->product_category_id);
         $this->assertNull($version->minimum_profit);
         $this->assertNull($version->maximum_profit);
+    }
+
+    public function test_missing_category_is_rejected_before_insert(): void
+    {
+        $creator = User::factory()->create();
+        $scheme = ProfitScheme::factory()
+            ->for($creator, 'creator')
+            ->create();
+        $data = $this->validVersionData();
+        unset($data['product_category_id']);
+
+        $this->expectException(InvalidProfitSchemeVersion::class);
+        $this->expectExceptionMessage(
+            'field [product_category_id] is required'
+        );
+
+        app(CreateProfitSchemeVersion::class)->execute(
+            $scheme,
+            $data,
+            $creator
+        );
+    }
+
+    public function test_null_category_is_rejected_before_insert(): void
+    {
+        $this->expectException(InvalidProfitSchemeVersion::class);
+        $this->expectExceptionMessage('Product category is required');
+
+        $this->createDraftVersion(overrides: [
+            'product_category_id' => null,
+        ]);
     }
 
     public function test_invalid_date_range_is_rejected_before_insert(): void

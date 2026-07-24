@@ -68,7 +68,9 @@ export default function ProfitRecipientForm(props: Props) {
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="grid gap-2">
-                            <Label htmlFor="code">Code</Label>
+                            <Label htmlFor="code" required>
+                                Code
+                            </Label>
                             <Input
                                 id="code"
                                 name="code"
@@ -87,7 +89,9 @@ export default function ProfitRecipientForm(props: Props) {
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="display_name">Display name</Label>
+                            <Label htmlFor="display_name" required>
+                                Display name
+                            </Label>
                             <Input
                                 id="display_name"
                                 name="display_name"
@@ -108,7 +112,9 @@ export default function ProfitRecipientForm(props: Props) {
                     {props.mode === 'create' ? (
                         <>
                             <div className="grid gap-2">
-                                <Label htmlFor="type">Recipient type</Label>
+                                <Label htmlFor="type" required>
+                                    Recipient type
+                                </Label>
                                 <input type="hidden" name="type" value={type} />
                                 <Select
                                     value={type}
@@ -141,7 +147,7 @@ export default function ProfitRecipientForm(props: Props) {
 
                             {type === 'investor' ? (
                                 <div className="grid gap-2">
-                                    <Label htmlFor="investor_id">
+                                    <Label htmlFor="investor_id" required>
                                         Linked Investor
                                     </Label>
                                     <input

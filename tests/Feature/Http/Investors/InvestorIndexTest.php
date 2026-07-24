@@ -76,10 +76,25 @@ class InvestorIndexTest extends InvestorHttpTestCase
                 'Capital@Example.test',
                 'cApItAl@',
             ],
-            'phone' => ['phone', '+6287799887766', '9988'],
-            'local phone prefix' => ['phone', '+6287799887766', '0877'],
-            'country phone prefix' => ['phone', '+6287799887766', '62877'],
+            'phone' => ['phone', '087799887766', '9988'],
+            'local phone prefix' => ['phone', '087799887766', '0877'],
+            'country phone prefix' => ['phone', '087799887766', '62877'],
             'international phone prefix' => [
+                'phone',
+                '087799887766',
+                '+62877',
+            ],
+            'legacy phone with local prefix' => [
+                'phone',
+                '+6287799887766',
+                '0877',
+            ],
+            'legacy phone with country prefix' => [
+                'phone',
+                '+6287799887766',
+                '62877',
+            ],
+            'legacy phone with international prefix' => [
                 'phone',
                 '+6287799887766',
                 '+62877',

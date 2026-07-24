@@ -59,6 +59,29 @@ class ProfitSchemeVersionManagementTest extends ProfitSchemeHttpTestCase
         ]);
     }
 
+    public function test_create_requires_a_category_and_rejects_null(): void
+    {
+        $user = $this->user();
+        $scheme = $this->scheme($user);
+        $missing = $this->versionPayload();
+        unset($missing['product_category_id']);
+
+        $this->actingAs($user)
+            ->post(
+                route('profit-schemes.versions.store', $scheme),
+                $missing
+            )
+            ->assertSessionHasErrors('product_category_id');
+        $this->actingAs($user)
+            ->post(
+                route('profit-schemes.versions.store', $scheme),
+                $this->versionPayload(['product_category_id' => null])
+            )
+            ->assertSessionHasErrors('product_category_id');
+
+        $this->assertDatabaseCount('profit_scheme_versions', 0);
+    }
+
     public function test_new_version_redirects_to_its_edit_page(): void
     {
         $user = $this->user();
@@ -107,6 +130,8 @@ class ProfitSchemeVersionManagementTest extends ProfitSchemeHttpTestCase
                 'scheme' => $scheme,
                 'version' => $version,
             ]), [
+                'product_category_id' => $version
+                    ->product_category_id,
                 'minimum_profit' => '25.50',
                 'maximum_profit' => '900.00',
                 'priority' => 99,
@@ -145,7 +170,11 @@ class ProfitSchemeVersionManagementTest extends ProfitSchemeHttpTestCase
             ->patch(route('profit-schemes.versions.update', [
                 'scheme' => $scheme,
                 'version' => $version,
-            ]), ['priority' => 500])
+            ]), [
+                'product_category_id' => $version
+                    ->product_category_id,
+                'priority' => 500,
+            ])
             ->assertSessionHasErrors('version');
 
         $this->assertSame(10, $version->fresh()->priority);
@@ -162,7 +191,11 @@ class ProfitSchemeVersionManagementTest extends ProfitSchemeHttpTestCase
             ->patch(route('profit-schemes.versions.update', [
                 'scheme' => $scheme,
                 'version' => $version,
-            ]), ['priority' => 500])
+            ]), [
+                'product_category_id' => $version
+                    ->product_category_id,
+                'priority' => 500,
+            ])
             ->assertSessionHasErrors('version');
 
         $this->assertSame(10, $version->fresh()->priority);
@@ -184,6 +217,8 @@ class ProfitSchemeVersionManagementTest extends ProfitSchemeHttpTestCase
                 'scheme' => $scheme,
                 'version' => $version,
             ]), [
+                'product_category_id' => $version
+                    ->product_category_id,
                 'minimum_profit' => '200.00',
                 'priority' => 80,
             ])
@@ -207,5 +242,30 @@ class ProfitSchemeVersionManagementTest extends ProfitSchemeHttpTestCase
             $before['updated_at'],
             $fresh->getRawOriginal('updated_at')
         );
+    }
+
+    public function test_update_requires_category_and_rejects_null(): void
+    {
+        $user = $this->user();
+        $scheme = $this->scheme($user);
+        $version = $this->draft($scheme, $user);
+
+        $this->actingAs($user)
+            ->patch(route('profit-schemes.versions.update', [
+                'scheme' => $scheme,
+                'version' => $version,
+            ]), ['priority' => 99])
+            ->assertSessionHasErrors('product_category_id');
+        $this->actingAs($user)
+            ->patch(route('profit-schemes.versions.update', [
+                'scheme' => $scheme,
+                'version' => $version,
+            ]), [
+                'product_category_id' => null,
+                'priority' => 99,
+            ])
+            ->assertSessionHasErrors('product_category_id');
+
+        $this->assertSame(10, $version->fresh()->priority);
     }
 }

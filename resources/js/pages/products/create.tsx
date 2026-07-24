@@ -31,7 +31,7 @@ export default function CreateProduct({
                         Create product
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Add a product and its default pricing.
+                        Add a product for use in transactions.
                     </p>
                 </div>
 

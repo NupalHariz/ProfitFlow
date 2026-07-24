@@ -36,6 +36,19 @@ class UpdateInvestorTest extends InvestorActionTestCase
         );
     }
 
+    public function test_it_normalizes_international_phone_to_local_digits(): void
+    {
+        $investor = $this->createManagedInvestor();
+
+        $updated = app(UpdateInvestor::class)->execute($investor, [
+            'name' => 'Updated Investor',
+            'email' => null,
+            'phone' => '+62 812 3456 7890',
+        ]);
+
+        $this->assertSame('081234567890', $updated->phone);
+    }
+
     public function test_invalid_update_is_atomic_and_rejects_status_or_unknown_fields(): void
     {
         $investor = $this->createManagedInvestor();

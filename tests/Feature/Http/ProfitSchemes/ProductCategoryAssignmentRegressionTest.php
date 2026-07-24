@@ -31,6 +31,7 @@ class ProductCategoryAssignmentRegressionTest extends ProfitSchemeHttpTestCase
         $user = $this->user();
         $scheme = $this->scheme($user);
         $version = $this->draft($scheme, $user);
+        $originalCategoryId = $version->product_category_id;
         $category = ProductCategory::factory()->create();
         $category->delete();
 
@@ -47,7 +48,10 @@ class ProductCategoryAssignmentRegressionTest extends ProfitSchemeHttpTestCase
         $fresh = $version->fresh();
 
         $this->assertNotNull($fresh);
-        $this->assertNull($fresh->product_category_id);
+        $this->assertSame(
+            $originalCategoryId,
+            $fresh->product_category_id
+        );
         $this->assertSame(10, $fresh->priority);
     }
 

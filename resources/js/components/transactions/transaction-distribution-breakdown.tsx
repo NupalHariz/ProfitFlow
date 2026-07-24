@@ -7,6 +7,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { formatRupiah, moneyToSignedCents } from '@/lib/money';
+import { formatPercentage } from '@/lib/percentage';
 import type { TransactionDetail } from '@/types';
 
 export default function TransactionDistributionBreakdown({
@@ -176,7 +177,7 @@ function DistributionState({
                                 {distribution.recipient_name_snapshot}
                             </td>
                             <td className="px-4 py-3 text-right font-mono tabular-nums">
-                                {distribution.percentage}%
+                                {formatPercentage(distribution.percentage)}
                             </td>
                             <td className="px-4 py-3 text-right font-medium tabular-nums">
                                 {formatRupiah(distribution.amount)}

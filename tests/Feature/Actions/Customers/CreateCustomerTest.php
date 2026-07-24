@@ -24,7 +24,7 @@ class CreateCustomerTest extends CustomerActionTestCase
             'finance@nusantara.test',
             $customer->email
         );
-        $this->assertSame('+62215550101', $customer->phone);
+        $this->assertSame('0215550101', $customer->phone);
         $this->assertSame('Jakarta', $customer->address);
     }
 
@@ -63,13 +63,17 @@ class CreateCustomerTest extends CustomerActionTestCase
     public static function supportedPhoneFormats(): array
     {
         return [
-            'local mobile' => ['081234567890', '+6281234567890'],
-            'country code mobile' => ['6281234567890', '+6281234567890'],
+            'local mobile' => ['081234567890', '081234567890'],
+            'country code mobile' => ['6281234567890', '081234567890'],
             'formatted international mobile' => [
                 '+62 812-3456-7890',
-                '+6281234567890',
+                '081234567890',
             ],
-            'local landline' => ['0215550102', '+62215550102'],
+            'local landline' => ['0215550102', '0215550102'],
+            'international landline' => [
+                '+62 21 555 0102',
+                '0215550102',
+            ],
         ];
     }
 
@@ -81,6 +85,21 @@ class CreateCustomerTest extends CustomerActionTestCase
         ]);
 
         $this->assertSame($first->email, $second->email);
+        $this->assertDatabaseCount('customers', 2);
+    }
+
+    public function test_duplicate_phone_is_allowed(): void
+    {
+        $first = $this->createManagedCustomer([
+            'phone' => '+62 812 3456 7890',
+        ]);
+        $second = $this->createManagedCustomer([
+            'name' => 'Second Customer',
+            'phone' => '081234567890',
+        ]);
+
+        $this->assertSame('081234567890', $first->phone);
+        $this->assertSame($first->phone, $second->phone);
         $this->assertDatabaseCount('customers', 2);
     }
 

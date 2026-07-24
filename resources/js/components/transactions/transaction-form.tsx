@@ -22,7 +22,11 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { aggregateMoneyPreviews, calculateItemPreview } from '@/lib/money';
+import {
+    aggregateMoneyPreviews,
+    calculateItemPreview,
+    formatEditableDecimal,
+} from '@/lib/money';
 import type {
     TransactionCustomerLookup,
     TransactionFormData,
@@ -180,7 +184,9 @@ export default function TransactionForm({
                             )}
 
                             <div className="grid gap-2">
-                                <Label htmlFor="customer_id">Customer</Label>
+                                <Label htmlFor="customer_id" required>
+                                    Customer
+                                </Label>
                                 <input
                                     type="hidden"
                                     name="customer_id"
@@ -225,7 +231,7 @@ export default function TransactionForm({
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="transaction_date">
+                                <Label htmlFor="transaction_date" required>
                                     Transaction date
                                 </Label>
                                 <Input
@@ -290,7 +296,7 @@ export default function TransactionForm({
 
                     <div className="flex flex-col justify-between gap-3 border-t pt-5 sm:flex-row sm:items-center">
                         <p className="text-xs text-muted-foreground">
-                            Totals are calculated when the transaction is saved.
+                            Review the totals before saving the transaction.
                         </p>
                         <Button disabled={processing}>
                             {processing ? 'Saving…' : submitLabel}
@@ -310,7 +316,7 @@ function editableRows(data: TransactionFormData): EditableTransactionItem[] {
                 ? ''
                 : (item.product_id?.toString() ?? ''),
         quantity: item.quantity.toString(),
-        unitSellingPrice: item.unit_selling_price,
+        unitSellingPrice: formatEditableDecimal(item.unit_selling_price),
         currentProductAvailable: item.current_product_available !== false,
         snapshot: item.snapshot,
     }));

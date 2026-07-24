@@ -28,6 +28,9 @@ final class ProfitSchemeDemoSeeder extends Seeder
             $homeOffice = ProductCategory::query()
                 ->where('slug', 'home-office')
                 ->sole();
+            $lifestyle = ProductCategory::query()
+                ->where('slug', 'lifestyle')
+                ->sole();
 
             $electronicsGrowth = $this->scheme(
                 'electronics-growth',
@@ -41,10 +44,10 @@ final class ProfitSchemeDemoSeeder extends Seeder
                 'Category-specific profit sharing for Home & Office products.',
                 $admin
             );
-            $general = $this->scheme(
-                'general-profit-sharing',
-                'General Profit Sharing',
-                'Lower-priority fallback for categories without a specific rule.',
+            $lifestyleGrowth = $this->scheme(
+                'lifestyle-growth',
+                'Lifestyle Growth',
+                'Category-specific profit sharing for Lifestyle products.',
                 $admin
             );
 
@@ -93,9 +96,9 @@ final class ProfitSchemeDemoSeeder extends Seeder
                 ]
             );
             $this->publishedVersion(
-                scheme: $general,
+                scheme: $lifestyleGrowth,
                 versionNumber: 1,
-                category: null,
+                category: $lifestyle,
                 effectiveFrom: '2026-07-01',
                 effectiveUntil: null,
                 priority: 10,
@@ -132,7 +135,7 @@ final class ProfitSchemeDemoSeeder extends Seeder
     private function publishedVersion(
         ProfitScheme $scheme,
         int $versionNumber,
-        ?ProductCategory $category,
+        ProductCategory $category,
         string $effectiveFrom,
         ?string $effectiveUntil,
         int $priority,
@@ -144,7 +147,7 @@ final class ProfitSchemeDemoSeeder extends Seeder
             'profit_scheme_id' => $scheme->id,
             'version' => $versionNumber,
         ], [
-            'product_category_id' => $category?->id,
+            'product_category_id' => $category->id,
             'minimum_profit' => '0.01',
             'maximum_profit' => null,
             'effective_from' => $effectiveFrom,

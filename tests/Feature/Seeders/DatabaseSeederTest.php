@@ -48,18 +48,18 @@ class DatabaseSeederTest extends TestCase
             'Citra Lestari',
         ], Investor::query()->orderBy('name')->pluck('name')->all());
         $this->assertSame([
-            '+62215550101',
-            '+62225550102',
-            '+622745550104',
+            '0215550101',
+            '0225550102',
+            '02745550104',
         ], Customer::query()
             ->whereNotNull('phone')
             ->orderBy('phone')
             ->pluck('phone')
             ->all());
         $this->assertSame([
-            '+6281200001001',
-            '+6281200001002',
-            '+6281200001003',
+            '081200001001',
+            '081200001002',
+            '081200001003',
         ], Investor::query()->orderBy('phone')->pluck('phone')->all());
 
         foreach ([
@@ -67,7 +67,7 @@ class DatabaseSeederTest extends TestCase
             ...Investor::query()->whereNotNull('phone')->pluck('phone'),
         ] as $phone) {
             $this->assertMatchesRegularExpression(
-                '/^\+62[1-9][0-9]{7,12}$/',
+                '/^0[1-9][0-9]{7,12}$/',
                 $phone
             );
         }
@@ -119,8 +119,8 @@ class DatabaseSeederTest extends TestCase
         $this->assertSame(3, ProfitScheme::query()->count());
         $this->assertSame([
             'Electronics Growth',
-            'General Profit Sharing',
             'Home & Office Growth',
+            'Lifestyle Growth',
         ], ProfitScheme::query()->orderBy('name')->pluck('name')->all());
 
         $electronics = ProfitScheme::query()
@@ -129,8 +129,8 @@ class DatabaseSeederTest extends TestCase
         $homeOffice = ProfitScheme::query()
             ->where('code', 'home-office-growth')
             ->sole();
-        $general = ProfitScheme::query()
-            ->where('code', 'general-profit-sharing')
+        $lifestyle = ProfitScheme::query()
+            ->where('code', 'lifestyle-growth')
             ->sole();
         $electronicsVersions = $electronics->versions()
             ->orderBy('version')
@@ -178,9 +178,23 @@ class DatabaseSeederTest extends TestCase
                 )
                 ->count()
         );
-        $this->assertNull(
-            $general->versions()->sole()->product_category_id
+        $this->assertSame(
+            'lifestyle',
+            $lifestyle->versions()
+                ->with('category')
+                ->sole()
+                ->category
+                ->slug
         );
+        $this->assertSame(
+            0,
+            ProfitSchemeVersion::query()
+                ->whereNull('product_category_id')
+                ->count()
+        );
+        $this->assertDatabaseMissing('profit_schemes', [
+            'name' => 'General Profit Sharing',
+        ]);
 
         $publishedVersions = ProfitSchemeVersion::query()
             ->whereNotNull('published_at')

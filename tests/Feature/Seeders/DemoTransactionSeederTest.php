@@ -66,12 +66,12 @@ class DemoTransactionSeederTest extends TestCase
         );
         $this->assertOnlyAppliedVersion(
             'TRX-DEMO-006',
-            'general-profit-sharing',
+            'lifestyle-growth',
             1
         );
     }
 
-    public function test_mixed_all_loss_and_general_fallback_history_is_coherent(): void
+    public function test_mixed_all_loss_and_lifestyle_history_is_coherent(): void
     {
         $this->seed(DatabaseSeeder::class);
 
@@ -111,19 +111,23 @@ class DemoTransactionSeederTest extends TestCase
             )
         );
 
-        $fallback = $this->transaction('TRX-DEMO-006');
-        $fallbackVersion = $fallback->items
+        $lifestyle = $this->transaction('TRX-DEMO-006');
+        $lifestyleVersion = $lifestyle->items
             ->sole()
             ->appliedProfitSchemeVersion;
 
-        $this->assertNotNull($fallbackVersion);
+        $this->assertNotNull($lifestyleVersion);
         $this->assertSame(
-            'general-profit-sharing',
-            $fallbackVersion->scheme->code
+            'lifestyle-growth',
+            $lifestyleVersion->scheme->code
         );
         $this->assertSame(
-            $fallback->items->sole()->net_profit,
-            $fallback->distributions()->sum('amount')
+            $lifestyle->items->sole()->product_category_id,
+            $lifestyleVersion->product_category_id
+        );
+        $this->assertSame(
+            $lifestyle->items->sole()->net_profit,
+            $lifestyle->distributions()->sum('amount')
         );
     }
 
@@ -250,6 +254,15 @@ class DemoTransactionSeederTest extends TestCase
                 $totals->totalNetProfit,
                 $transaction->total_net_profit
             );
+
+            if (in_array($transaction->status, [
+                TransactionStatus::PendingDistribution,
+                TransactionStatus::ProcessingDistribution,
+                TransactionStatus::Distributed,
+                TransactionStatus::DistributionFailed,
+            ], true)) {
+                $this->assertFinalizedPositiveItemsAreFrozen($transaction);
+            }
         }
 
         foreach (Transaction::query()
@@ -397,6 +410,11 @@ class DemoTransactionSeederTest extends TestCase
                     $item->applied_profit_scheme_version_id
                 );
                 $this->assertNotNull($item->rule_resolved_at);
+                $this->assertSame(
+                    $item->product_category_id,
+                    $item->appliedProfitSchemeVersion
+                        ?->product_category_id
+                );
             }
         }
     }

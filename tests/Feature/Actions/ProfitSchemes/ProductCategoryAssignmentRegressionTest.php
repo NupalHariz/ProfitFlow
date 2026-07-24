@@ -49,7 +49,8 @@ class ProductCategoryAssignmentRegressionTest extends ProfitSchemeActionTestCase
         $fresh = $version->fresh();
 
         $this->assertNotNull($fresh);
-        $this->assertNull($fresh->product_category_id);
+        $this->assertNotNull($fresh->product_category_id);
+        $this->assertNotSame($category->id, $fresh->product_category_id);
         $this->assertSame(20, $fresh->priority);
     }
 
@@ -62,7 +63,10 @@ class ProductCategoryAssignmentRegressionTest extends ProfitSchemeActionTestCase
         ]);
         $updated = app(UpdateDraftProfitSchemeVersion::class)->execute(
             $created,
-            ['priority' => 44]
+            [
+                'product_category_id' => $category->id,
+                'priority' => 44,
+            ]
         );
 
         $this->assertSame($category->id, $updated->product_category_id);

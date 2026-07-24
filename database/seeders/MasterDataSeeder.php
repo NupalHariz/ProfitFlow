@@ -201,13 +201,13 @@ final class MasterDataSeeder extends Seeder
             [
                 'name' => 'PT Nusantara Retail',
                 'email' => 'purchasing@nusantara-retail.test',
-                'phone' => '+62215550101',
+                'phone' => '0215550101',
                 'address' => 'Jakarta',
             ],
             [
                 'name' => 'CV Mitra Digital',
                 'email' => 'operations@mitra-digital.test',
-                'phone' => '+62225550102',
+                'phone' => '0225550102',
                 'address' => 'Bandung',
             ],
             [
@@ -219,7 +219,7 @@ final class MasterDataSeeder extends Seeder
             [
                 'name' => 'Koperasi Maju Bersama',
                 'email' => 'admin@maju-bersama.test',
-                'phone' => '+622745550104',
+                'phone' => '02745550104',
                 'address' => null,
             ],
         ];
@@ -238,17 +238,17 @@ final class MasterDataSeeder extends Seeder
             'aria' => [
                 'name' => 'Aria Pratama',
                 'email' => 'aria.investor@example.com',
-                'phone' => '+6281200001001',
+                'phone' => '081200001001',
             ],
             'bima' => [
                 'name' => 'Bima Santoso',
                 'email' => 'bima.investor@example.com',
-                'phone' => '+6281200001002',
+                'phone' => '081200001002',
             ],
             'citra' => [
                 'name' => 'Citra Lestari',
                 'email' => 'citra.investor@example.com',
-                'phone' => '+6281200001003',
+                'phone' => '081200001003',
             ],
         ];
     }

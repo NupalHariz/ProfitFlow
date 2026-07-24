@@ -5,6 +5,7 @@ namespace Tests\Feature\Http\ProfitSchemes;
 use App\Actions\ProfitSchemes\CreateProfitSchemeVersion;
 use App\Actions\ProfitSchemes\PublishProfitSchemeVersion;
 use App\Actions\ProfitSchemes\ReplaceDraftProfitSchemeAllocations;
+use App\Models\ProductCategory;
 use App\Models\ProfitRecipient;
 use App\Models\ProfitScheme;
 use App\Models\ProfitSchemeVersion;
@@ -38,10 +39,15 @@ abstract class ProfitSchemeHttpTestCase extends TestCase
         User $creator,
         array $attributes = []
     ): ProfitSchemeVersion {
+        if (! array_key_exists('product_category_id', $attributes)) {
+            $attributes['product_category_id'] = ProductCategory::factory()
+                ->create()
+                ->id;
+        }
+
         return app(CreateProfitSchemeVersion::class)->execute(
             $scheme,
             array_replace([
-                'product_category_id' => null,
                 'minimum_profit' => null,
                 'maximum_profit' => null,
                 'effective_from' => '2026-01-01',
@@ -95,8 +101,13 @@ abstract class ProfitSchemeHttpTestCase extends TestCase
      */
     protected function versionPayload(array $overrides = []): array
     {
+        if (! array_key_exists('product_category_id', $overrides)) {
+            $overrides['product_category_id'] = ProductCategory::factory()
+                ->create()
+                ->id;
+        }
+
         return array_replace([
-            'product_category_id' => null,
             'minimum_profit' => null,
             'maximum_profit' => null,
             'effective_from' => '2026-07-01',

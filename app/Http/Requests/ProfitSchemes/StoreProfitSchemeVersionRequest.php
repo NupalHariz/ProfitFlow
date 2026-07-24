@@ -17,7 +17,7 @@ class StoreProfitSchemeVersionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'product_category_id' => ['nullable', 'integer', 'min:1'],
+            'product_category_id' => ['required', 'integer', 'min:1'],
             'minimum_profit' => [
                 'nullable',
                 'string',
@@ -41,7 +41,7 @@ class StoreProfitSchemeVersionRequest extends FormRequest
 
     /**
      * @return array{
-     *     product_category_id: int|null,
+     *     product_category_id: int,
      *     minimum_profit: string|null,
      *     maximum_profit: string|null,
      *     effective_from: string,
@@ -55,11 +55,9 @@ class StoreProfitSchemeVersionRequest extends FormRequest
         $validated = $this->validated();
 
         return [
-            'product_category_id' => isset(
-                $validated['product_category_id']
-            )
-                ? (int) $validated['product_category_id']
-                : null,
+            'product_category_id' => (int) $validated[
+                'product_category_id'
+            ],
             'minimum_profit' => $validated['minimum_profit'] ?? null,
             'maximum_profit' => $validated['maximum_profit'] ?? null,
             'effective_from' => $validated['effective_from'],

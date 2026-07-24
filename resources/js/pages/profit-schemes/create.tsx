@@ -67,7 +67,9 @@ export default function CreateProfitScheme() {
                                     <InputError message={errors.scheme} />
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor="name">Name</Label>
+                                        <Label htmlFor="name" required>
+                                            Name
+                                        </Label>
                                         <Input
                                             id="name"
                                             name="name"
@@ -83,7 +85,9 @@ export default function CreateProfitScheme() {
                                     </div>
 
                                     <div className="grid gap-2">
-                                        <Label htmlFor="code">Code</Label>
+                                        <Label htmlFor="code" required>
+                                            Code
+                                        </Label>
                                         <Input
                                             id="code"
                                             name="code"
@@ -131,8 +135,8 @@ export default function CreateProfitScheme() {
                                                 Active scheme
                                             </Label>
                                             <p className="text-xs text-muted-foreground">
-                                                Active schemes participate in
-                                                rule resolution.
+                                                Active schemes can apply to new
+                                                transactions.
                                             </p>
                                         </div>
                                         <InputError

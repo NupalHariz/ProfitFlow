@@ -28,7 +28,7 @@ final class ProfitSchemeVersionValidator
     /**
      * @param  array<string, mixed>  $data
      * @return array{
-     *     product_category_id: int|null,
+     *     product_category_id: int,
      *     minimum_profit: string|null,
      *     maximum_profit: string|null,
      *     effective_from: string,
@@ -41,13 +41,14 @@ final class ProfitSchemeVersionValidator
     {
         $this->assertOnlyRuleFields($data);
         $this->assertRequiredFields($data, [
+            'product_category_id',
             'effective_from',
             'priority',
             'is_active',
         ]);
 
         return $this->normalizeCandidate([
-            'product_category_id' => $data['product_category_id'] ?? null,
+            'product_category_id' => $data['product_category_id'],
             'minimum_profit' => $data['minimum_profit'] ?? null,
             'maximum_profit' => $data['maximum_profit'] ?? null,
             'effective_from' => $data['effective_from'],
@@ -72,6 +73,7 @@ final class ProfitSchemeVersionValidator
         }
 
         $this->assertOnlyRuleFields($data);
+        $this->assertRequiredFields($data, ['product_category_id']);
 
         $candidate = [
             'product_category_id' => $version->getAttribute(
@@ -157,7 +159,7 @@ final class ProfitSchemeVersionValidator
     /**
      * @param  array<string, mixed>  $candidate
      * @return array{
-     *     product_category_id: int|null,
+     *     product_category_id: int,
      *     minimum_profit: string|null,
      *     maximum_profit: string|null,
      *     effective_from: string,
@@ -229,10 +231,12 @@ final class ProfitSchemeVersionValidator
         ];
     }
 
-    private function normalizeCategory(mixed $categoryId): ?int
+    private function normalizeCategory(mixed $categoryId): int
     {
         if ($categoryId === null) {
-            return null;
+            throw new InvalidProfitSchemeVersion(
+                'Product category is required for every profit scheme version.'
+            );
         }
 
         if (! is_int($categoryId)

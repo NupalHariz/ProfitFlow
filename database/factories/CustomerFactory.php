@@ -18,7 +18,7 @@ class CustomerFactory extends Factory
         return [
             'name' => $this->faker->unique()->name(),
             'email' => $this->faker->optional()->safeEmail(),
-            'phone' => $this->faker->optional()->numerify('+628##########'),
+            'phone' => $this->faker->optional()->numerify('08##########'),
             'address' => $this->faker->optional()->address(),
         ];
     }

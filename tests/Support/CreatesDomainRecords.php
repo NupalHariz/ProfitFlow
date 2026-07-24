@@ -148,6 +148,10 @@ trait CreatesDomainRecords
         $creator ??= $this->createUser();
         $scheme ??= $this->createScheme($creator);
 
+        if (! array_key_exists('product_category_id', $attributes)) {
+            $attributes['product_category_id'] = $this->createCategory()->id;
+        }
+
         return ProfitSchemeVersion::query()->create(array_merge([
             'profit_scheme_id' => $scheme->id,
             'version' => 1,

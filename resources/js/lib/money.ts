@@ -45,6 +45,12 @@ export function formatMoneyCents(cents: bigint): string {
     return `${negative ? '-' : ''}${whole.toString()}.${fraction}`;
 }
 
+export function formatEditableDecimal(value: string): string {
+    const match = /^(-?\d+)\.00$/.exec(value);
+
+    return match ? match[1] : value;
+}
+
 export function formatRupiah(value: string): string {
     const cents = moneyToSignedCents(value);
 
@@ -57,8 +63,9 @@ export function formatRupiah(value: string): string {
     const unsigned = negative ? normalized.slice(1) : normalized;
     const [whole, fraction] = unsigned.split('.');
     const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    const displayedFraction = fraction === '00' ? '' : `,${fraction}`;
 
-    return `${negative ? '-' : ''}Rp ${grouped},${fraction}`;
+    return `${negative ? '-' : ''}Rp ${grouped}${displayedFraction}`;
 }
 
 export function calculateItemPreview(

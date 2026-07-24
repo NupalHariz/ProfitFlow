@@ -23,56 +23,57 @@ class ProfitRuleResolverTest extends TestCase
 
     private ProfitRuleResolver $resolver;
 
+    private ProductCategory $category;
+
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->resolver = new ProfitRuleResolver;
+        $this->category = ProductCategory::factory()->create();
     }
 
     public function test_exact_category_rule_matches(): void
     {
-        $category = ProductCategory::factory()->create();
         $rule = $this->createRule([
-            'product_category_id' => $category->id,
+            'product_category_id' => $this->category->id,
         ]);
 
-        $this->assertRuleResolved($rule, $category->id);
+        $this->assertRuleResolved($rule, $this->category->id);
     }
 
-    public function test_general_rule_matches_when_no_category_rule_matches(): void
+    public function test_category_null_version_never_matches_a_category(): void
     {
-        $requestedCategory = ProductCategory::factory()->create();
+        $this->createRule([
+            'product_category_id' => null,
+        ]);
+
+        $this->assertNull($this->resolve());
+    }
+
+    public function test_null_category_input_never_resolves_a_category_null_version(): void
+    {
+        $this->createRule([
+            'product_category_id' => null,
+        ]);
+
+        $this->assertNull($this->resolver->resolve(
+            self::RESOLUTION_DATE,
+            null,
+            '100.00'
+        ));
+    }
+
+    public function test_no_cross_category_or_category_null_fallback_occurs(): void
+    {
         $otherCategory = ProductCategory::factory()->create();
-        $generalRule = $this->createRule();
         $this->createRule([
             'product_category_id' => $otherCategory->id,
             'priority' => 100,
         ]);
+        $this->createRule(['product_category_id' => null]);
 
-        $this->assertRuleResolved($generalRule, $requestedCategory->id);
-    }
-
-    public function test_general_rule_matches_a_supplied_category(): void
-    {
-        $category = ProductCategory::factory()->create();
-        $generalRule = $this->createRule([
-            'product_category_id' => null,
-        ]);
-
-        $this->assertRuleResolved($generalRule, $category->id);
-    }
-
-    public function test_only_general_rules_match_when_category_is_null(): void
-    {
-        $category = ProductCategory::factory()->create();
-        $generalRule = $this->createRule();
-        $this->createRule([
-            'product_category_id' => $category->id,
-            'priority' => 100,
-        ]);
-
-        $this->assertRuleResolved($generalRule, null);
+        $this->assertNull($this->resolve());
     }
 
     public function test_inactive_version_is_ignored(): void
@@ -219,7 +220,7 @@ class ProfitRuleResolverTest extends TestCase
         $this->assertNull($this->resolve(profit: '100.01'));
     }
 
-    public function test_highest_priority_matching_rule_wins(): void
+    public function test_multiple_schemes_in_the_same_category_compare_by_priority(): void
     {
         $this->createRule(['priority' => 10]);
         $highestPriority = $this->createRule(['priority' => 20]);
@@ -227,36 +228,113 @@ class ProfitRuleResolverTest extends TestCase
         $this->assertRuleResolved($highestPriority);
     }
 
-    public function test_higher_priority_general_rule_beats_category_rule(): void
+    public function test_newest_effective_version_replaces_older_higher_priority_version_within_one_scheme(): void
     {
-        $category = ProductCategory::factory()->create();
+        $scheme = ProfitScheme::factory()->create();
         $this->createRule([
-            'product_category_id' => $category->id,
-            'priority' => 10,
-        ]);
-        $generalRule = $this->createRule([
-            'product_category_id' => null,
-            'priority' => 20,
-        ]);
+            'version' => 1,
+            'priority' => 100,
+        ], $scheme);
+        $current = $this->createRule([
+            'version' => 2,
+            'priority' => 0,
+        ], $scheme);
 
-        $this->assertRuleResolved($generalRule, $category->id);
+        $this->assertRuleResolved($current);
     }
 
-    public function test_category_rule_has_no_hidden_precedence(): void
+    public function test_current_version_range_mismatch_does_not_fall_back_to_older_version(): void
     {
-        $category = ProductCategory::factory()->create();
+        $scheme = ProfitScheme::factory()->create();
         $this->createRule([
-            'product_category_id' => $category->id,
-            'priority' => 10,
-            'published_at' => '2026-07-01 00:00:00',
-        ]);
-        $newerGeneralRule = $this->createRule([
-            'product_category_id' => null,
-            'priority' => 10,
-            'published_at' => '2026-07-02 00:00:00',
-        ]);
+            'version' => 1,
+            'minimum_profit' => '0.00',
+            'maximum_profit' => '500.00',
+        ], $scheme);
+        $this->createRule([
+            'version' => 2,
+            'minimum_profit' => '1000.00',
+        ], $scheme);
 
-        $this->assertRuleResolved($newerGeneralRule, $category->id);
+        $this->assertNull($this->resolve(profit: '100.00'));
+    }
+
+    public function test_current_inactive_version_does_not_fall_back_to_older_active_version(): void
+    {
+        $scheme = ProfitScheme::factory()->create();
+        $this->createRule([
+            'version' => 1,
+            'is_active' => true,
+        ], $scheme);
+        $this->createRule([
+            'version' => 2,
+            'is_active' => false,
+        ], $scheme);
+
+        $this->assertNull($this->resolve());
+    }
+
+    public function test_current_version_for_another_category_does_not_fall_back_to_older_version(): void
+    {
+        $scheme = ProfitScheme::factory()->create();
+        $this->createRule([
+            'version' => 1,
+            'product_category_id' => $this->category->id,
+        ], $scheme);
+        $this->createRule([
+            'version' => 2,
+            'product_category_id' => ProductCategory::factory()->create()->id,
+        ], $scheme);
+
+        $this->assertNull($this->resolve());
+    }
+
+    public function test_future_version_does_not_supersede_current_version_before_its_start_date(): void
+    {
+        $scheme = ProfitScheme::factory()->create();
+        $current = $this->createRule([
+            'version' => 1,
+            'effective_from' => '2026-07-01',
+        ], $scheme);
+        $future = $this->createRule([
+            'version' => 2,
+            'effective_from' => '2026-08-01',
+        ], $scheme);
+
+        $this->assertRuleResolved($current, date: '2026-07-24');
+        $this->assertRuleResolved($future, date: '2026-08-10');
+    }
+
+    public function test_transaction_date_not_application_time_controls_current_version(): void
+    {
+        CarbonImmutable::setTestNow('2030-01-01 00:00:00');
+        $scheme = ProfitScheme::factory()->create();
+        $historical = $this->createRule([
+            'version' => 1,
+            'effective_from' => '2026-07-01',
+        ], $scheme);
+        $this->createRule([
+            'version' => 2,
+            'effective_from' => '2026-08-01',
+        ], $scheme);
+
+        $this->assertRuleResolved($historical, date: '2026-07-24');
+    }
+
+    public function test_priority_still_compares_current_versions_from_separate_schemes(): void
+    {
+        $lowerPriorityScheme = ProfitScheme::factory()->create();
+        $higherPriorityScheme = ProfitScheme::factory()->create();
+        $this->createRule([
+            'version' => 2,
+            'priority' => 10,
+        ], $lowerPriorityScheme);
+        $winner = $this->createRule([
+            'version' => 1,
+            'priority' => 20,
+        ], $higherPriorityScheme);
+
+        $this->assertRuleResolved($winner);
     }
 
     public function test_equal_priority_chooses_latest_publication(): void
@@ -444,6 +522,10 @@ class ProfitRuleResolverTest extends TestCase
         $sql = strtolower($queries[0]['query']);
 
         $this->assertStringContainsString('exists', $sql);
+        $this->assertStringContainsString(
+            'distinct on (current_versions.profit_scheme_id)',
+            $sql
+        );
         $this->assertStringContainsString('limit 1', $sql);
         $this->assertStringContainsString(
             'order by "priority" desc, "published_at" desc, "version" desc, "id" desc',
@@ -473,6 +555,7 @@ class ProfitRuleResolverTest extends TestCase
             ->for($scheme, 'scheme')
             ->published()
             ->create(array_merge([
+                'product_category_id' => $this->category->id,
                 'minimum_profit' => null,
                 'maximum_profit' => null,
                 'effective_from' => '2026-01-01',
@@ -493,6 +576,8 @@ class ProfitRuleResolverTest extends TestCase
         string $profit = '100.00',
         CarbonInterface|string $date = self::RESOLUTION_DATE,
     ): ?ProfitSchemeVersion {
+        $categoryId ??= $this->category->id;
+
         return $this->resolver->resolve($date, $categoryId, $profit);
     }
 

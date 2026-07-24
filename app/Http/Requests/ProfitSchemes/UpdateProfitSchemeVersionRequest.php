@@ -18,8 +18,7 @@ class UpdateProfitSchemeVersionRequest extends FormRequest
     {
         return [
             'product_category_id' => [
-                'sometimes',
-                'nullable',
+                'required',
                 'integer',
                 'min:1',
             ],
@@ -60,9 +59,7 @@ class UpdateProfitSchemeVersionRequest extends FormRequest
 
         foreach ($validated as $field => $value) {
             $data[$field] = match ($field) {
-                'product_category_id' => $value === null
-                    ? null
-                    : (int) $value,
+                'product_category_id' => (int) $value,
                 'priority' => (int) $value,
                 'is_active' => (bool) $value,
                 default => $value,

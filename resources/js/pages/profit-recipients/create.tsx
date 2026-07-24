@@ -53,7 +53,7 @@ export default function CreateProfitRecipient({
                     <CardHeader>
                         <CardTitle>Recipient details</CardTitle>
                         <CardDescription>
-                            The code must be unique and is case-sensitive.
+                            Use a unique code for this Profit Recipient.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

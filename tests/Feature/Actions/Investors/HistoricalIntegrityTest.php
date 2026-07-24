@@ -30,7 +30,6 @@ class HistoricalIntegrityTest extends InvestorActionTestCase
             'is_active' => true,
         ]);
         $version = ProfitSchemeVersion::factory()
-            ->general()
             ->published()
             ->create();
         $allocation = ProfitSchemeAllocation::factory()
@@ -119,7 +118,7 @@ class HistoricalIntegrityTest extends InvestorActionTestCase
 
         $this->assertSame('Current Investor Name', $active->name);
         $this->assertSame('current@example.test', $active->email);
-        $this->assertSame('+6281199990001', $active->phone);
+        $this->assertSame('081199990001', $active->phone);
         $this->assertTrue($active->is_active);
         $this->assertEquals(
             $storedRows['recipient'],

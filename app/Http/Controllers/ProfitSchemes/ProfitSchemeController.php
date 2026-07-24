@@ -211,6 +211,11 @@ class ProfitSchemeController extends Controller
                     ->all(),
                 true
             );
+        $today = now()->toDateString();
+        $currentVersion = $this->currentPublishedVersion(
+            $scheme,
+            $today
+        );
 
         return Inertia::render('profit-schemes/show', [
             'scheme' => [
@@ -230,7 +235,9 @@ class ProfitSchemeController extends Controller
                             ProfitSchemeVersion $version
                         ): array => $this->versionData(
                             $version,
-                            $availableRecipientLookup
+                            $availableRecipientLookup,
+                            $currentVersion,
+                            $today
                         )
                     )
                     ->values()
@@ -245,7 +252,9 @@ class ProfitSchemeController extends Controller
      */
     private function versionData(
         ProfitSchemeVersion $version,
-        array $availableRecipientLookup
+        array $availableRecipientLookup,
+        ?ProfitSchemeVersion $currentVersion,
+        string $today
     ): array {
         $published = $version->published_at !== null;
         $historicallyReferenced = (int) $version->getAttribute(
@@ -293,6 +302,11 @@ class ProfitSchemeController extends Controller
                 'name' => $version->creator->name,
             ],
             'lifecycle_status' => $published ? 'published' : 'draft',
+            'version_status' => $this->versionStatus(
+                $version,
+                $currentVersion,
+                $today
+            ),
             'is_published' => $published,
             'is_historically_referenced' => $historicallyReferenced,
             'is_immutable' => $published || $historicallyReferenced,
@@ -304,6 +318,9 @@ class ProfitSchemeController extends Controller
             'is_ready_to_publish' => ! $published
                 && ! $historicallyReferenced
                 && $version->is_active
+                && $version->product_category_id !== null
+                && $version->category !== null
+                && ! $version->category->trashed()
                 && $unavailableAllocationCount === 0
                 && $allocationTotalUnits
                     === FixedDecimal::PERCENTAGE_TOTAL_UNITS,
@@ -339,6 +356,65 @@ class ProfitSchemeController extends Controller
                 ->values()
                 ->all(),
         ];
+    }
+
+    private function currentPublishedVersion(
+        ProfitScheme $scheme,
+        string $date
+    ): ?ProfitSchemeVersion {
+        $current = null;
+
+        foreach ($scheme->versions as $version) {
+            if ($version->published_at === null
+                || $this->dateString(
+                    $version->getAttribute('effective_from')
+                ) > $date) {
+                continue;
+            }
+
+            $effectiveUntil = $this->nullableDateString(
+                $version->getAttribute('effective_until')
+            );
+
+            if ($effectiveUntil !== null && $effectiveUntil < $date) {
+                continue;
+            }
+
+            if ($current === null
+                || $version->version > $current->version
+                || ($version->version === $current->version
+                    && $version->id > $current->id)) {
+                $current = $version;
+            }
+        }
+
+        return $current;
+    }
+
+    private function versionStatus(
+        ProfitSchemeVersion $version,
+        ?ProfitSchemeVersion $currentVersion,
+        string $today
+    ): string {
+        if ($version->published_at === null) {
+            return 'draft';
+        }
+
+        if ($this->dateString(
+            $version->getAttribute('effective_from')
+        ) > $today) {
+            return 'scheduled';
+        }
+
+        if ($currentVersion?->id === $version->id) {
+            return 'current';
+        }
+
+        if ($currentVersion !== null) {
+            return 'superseded';
+        }
+
+        return 'expired';
     }
 
     private function recipientType(

@@ -171,6 +171,23 @@ class PublishProfitSchemeVersionTest extends ProfitSchemeActionTestCase
         $this->publish($version);
     }
 
+    public function test_category_null_draft_cannot_be_published(): void
+    {
+        $version = ProfitSchemeVersion::factory()->create([
+            'product_category_id' => null,
+        ]);
+        $recipient = $this->createRecipient();
+        $this->replaceAllocations($version, [[
+            'profit_recipient_id' => $recipient->id,
+            'percentage' => '100.0000',
+        ]]);
+
+        $this->expectException(InvalidProfitSchemeVersion::class);
+        $this->expectExceptionMessage('Product category is required');
+
+        $this->publish($version);
+    }
+
     public function test_failed_inactive_publication_leaves_version_and_allocations_unchanged(): void
     {
         $version = $this->createDraftVersion(overrides: [
@@ -401,7 +418,7 @@ class PublishProfitSchemeVersionTest extends ProfitSchemeActionTestCase
 
         $resolved = app(ProfitRuleResolver::class)->resolve(
             '2026-07-15',
-            null,
+            $published->product_category_id,
             '250.00'
         );
 

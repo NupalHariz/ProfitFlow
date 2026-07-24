@@ -47,6 +47,15 @@ class DemoSeederReadinessTest extends TestCase
             'items' => 14,
             'distributions' => 17,
         ], $counts);
+        $this->assertSame(
+            0,
+            ProfitSchemeVersion::query()
+                ->whereNull('product_category_id')
+                ->count()
+        );
+        $this->assertDatabaseMissing('profit_schemes', [
+            'name' => 'General Profit Sharing',
+        ]);
 
         $this->seed(DatabaseSeeder::class);
 

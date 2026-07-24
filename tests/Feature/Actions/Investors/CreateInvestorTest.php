@@ -21,7 +21,7 @@ class CreateInvestorTest extends InvestorActionTestCase
 
         $this->assertSame('Naufal Pratama', $investor->name);
         $this->assertSame('investor@example.test', $investor->email);
-        $this->assertSame('+6281200001001', $investor->phone);
+        $this->assertSame('081200001001', $investor->phone);
         $this->assertFalse($investor->is_active);
         $this->assertDatabaseCount('investors', 1);
         $this->assertDatabaseCount('profit_recipients', 0);
@@ -66,13 +66,17 @@ class CreateInvestorTest extends InvestorActionTestCase
     public static function supportedPhoneFormats(): array
     {
         return [
-            'local mobile' => ['081234567890', '+6281234567890'],
-            'country code mobile' => ['6281234567890', '+6281234567890'],
+            'local mobile' => ['081234567890', '081234567890'],
+            'country code mobile' => ['6281234567890', '081234567890'],
             'formatted international mobile' => [
                 '+62 (812) 3456-7890',
-                '+6281234567890',
+                '081234567890',
             ],
-            'local landline' => ['0215550102', '+62215550102'],
+            'local landline' => ['0215550102', '0215550102'],
+            'international landline' => [
+                '+62 21 555 0102',
+                '0215550102',
+            ],
         ];
     }
 

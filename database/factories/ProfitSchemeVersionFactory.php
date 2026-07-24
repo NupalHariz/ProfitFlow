@@ -22,7 +22,7 @@ class ProfitSchemeVersionFactory extends Factory
         return [
             'profit_scheme_id' => ProfitScheme::factory(),
             'version' => 1,
-            'product_category_id' => null,
+            'product_category_id' => ProductCategory::factory(),
             'minimum_profit' => '0.01',
             'maximum_profit' => null,
             'effective_from' => now()->startOfYear()->toDateString(),
@@ -41,13 +41,6 @@ class ProfitSchemeVersionFactory extends Factory
     {
         return $this->state(fn (): array => [
             'published_at' => now(),
-        ]);
-    }
-
-    public function general(): static
-    {
-        return $this->state(fn (): array => [
-            'product_category_id' => null,
         ]);
     }
 

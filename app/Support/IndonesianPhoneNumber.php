@@ -79,7 +79,7 @@ final class IndonesianPhoneNumber implements ValidationRule
             );
         }
 
-        return '+62'.$nationalNumber;
+        return '0'.$nationalNumber;
     }
 
     public static function normalizeSearchPrefix(string $value): ?string
@@ -98,12 +98,21 @@ final class IndonesianPhoneNumber implements ValidationRule
             return null;
         }
 
-        return match (true) {
-            str_starts_with($value, '+62') => '+'.$digits,
+        $nationalNumber = match (true) {
+            str_starts_with($value, '+62') => substr($digits, 2),
             str_starts_with($value, '+') => null,
-            str_starts_with($digits, '62') => '+'.$digits,
-            str_starts_with($digits, '0') => '+62'.substr($digits, 1),
+            str_starts_with($digits, '62') => substr($digits, 2),
+            str_starts_with($digits, '0') => substr($digits, 1),
             default => null,
         };
+
+        if (! is_string($nationalNumber)
+            || preg_match('/^[1-9][0-9]{0,12}$/', $nationalNumber) !== 1) {
+            return null;
+        }
+
+        return str_starts_with($digits, '0')
+            ? '+62'.$nationalNumber
+            : '0'.$nationalNumber;
     }
 }

@@ -12,6 +12,8 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { formatRupiah } from '@/lib/money';
+import { formatPercentage } from '@/lib/percentage';
 
 type RecipientSummary = {
     id: number;
@@ -44,6 +46,8 @@ type VersionData = {
         name: string;
     };
     lifecycle_status: 'draft' | 'published';
+    version_status:
+        'draft' | 'current' | 'scheduled' | 'superseded' | 'expired';
     is_published: boolean;
     is_historically_referenced: boolean;
     is_immutable: boolean;
@@ -122,8 +126,10 @@ export default function ProfitSchemeShow({ scheme }: PageProps) {
                     <div>
                         <h2 className="font-semibold">Version history</h2>
                         <p className="text-sm text-muted-foreground">
-                            Newest version first. Published or used versions
-                            cannot be edited.
+                            New transactions use the latest applicable version
+                            for their transaction date. Previous versions remain
+                            available for transaction history. Published or used
+                            versions cannot be edited.
                         </p>
                     </div>
                 </div>
@@ -185,6 +191,17 @@ function VersionCard({
                             >
                                 {version.is_published ? 'Published' : 'Draft'}
                             </Badge>
+                            {version.is_published && (
+                                <Badge
+                                    variant={
+                                        version.version_status === 'current'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                >
+                                    {versionStatusLabel(version.version_status)}
+                                </Badge>
+                            )}
                             <Badge
                                 variant={
                                     version.is_active ? 'secondary' : 'outline'
@@ -245,7 +262,7 @@ function VersionCard({
                             Category
                         </dt>
                         <dd className="mt-1 font-medium">
-                            {version.category?.name ?? 'General'}
+                            {version.category?.name ?? 'Category unavailable'}
                             {version.category?.is_deleted ? ' (deleted)' : ''}
                         </dd>
                     </div>
@@ -299,7 +316,7 @@ function VersionCard({
                                         : 'border-amber-600/30 bg-amber-500/10 text-amber-700'
                                 }
                             >
-                                {version.allocation_total}%
+                                {formatPercentage(version.allocation_total)}
                             </Badge>
                         </div>
                     </div>
@@ -345,7 +362,9 @@ function VersionCard({
                                             )}
                                         </div>
                                         <p className="font-mono text-sm font-semibold">
-                                            {allocation.percentage}%
+                                            {formatPercentage(
+                                                allocation.percentage,
+                                            )}
                                         </p>
                                     </div>
                                 ))}
@@ -398,18 +417,19 @@ function formatProfitRange(
         return 'Any net profit';
     }
 
-    return `${minimum === null ? 'No minimum' : formatMoney(minimum)} – ${
-        maximum === null ? 'No maximum' : formatMoney(maximum)
+    return `${minimum === null ? 'No minimum' : formatRupiah(minimum)} – ${
+        maximum === null ? 'No maximum' : formatRupiah(maximum)
     }`;
 }
 
-function formatMoney(value: string): string {
-    const negative = value.startsWith('-');
-    const unsigned = negative ? value.slice(1) : value;
-    const [whole, fraction = '00'] = unsigned.split('.');
-    const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-    return `${negative ? '-' : ''}Rp ${grouped},${fraction.padEnd(2, '0')}`;
+function versionStatusLabel(status: VersionData['version_status']): string {
+    return {
+        draft: 'Draft',
+        current: 'Current',
+        scheduled: 'Scheduled',
+        superseded: 'Superseded',
+        expired: 'Expired',
+    }[status];
 }
 
 function formatDate(value: string): string {

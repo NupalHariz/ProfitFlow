@@ -27,6 +27,20 @@ class UpdateCustomerTest extends CustomerActionTestCase
         $this->assertSame('Bandung', $updated->address);
     }
 
+    public function test_it_normalizes_international_phone_to_local_digits(): void
+    {
+        $customer = $this->createManagedCustomer();
+
+        $updated = app(UpdateCustomer::class)->execute(
+            $customer,
+            $this->customerData([
+                'phone' => '+62 21 555 0102',
+            ])
+        );
+
+        $this->assertSame('0215550102', $updated->phone);
+    }
+
     public function test_update_does_not_modify_referencing_transactions(): void
     {
         $customer = $this->createManagedCustomer();

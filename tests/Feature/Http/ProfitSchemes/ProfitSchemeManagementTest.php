@@ -3,6 +3,7 @@
 namespace Tests\Feature\Http\ProfitSchemes;
 
 use App\Models\ProfitScheme;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -220,6 +221,86 @@ class ProfitSchemeManagementTest extends ProfitSchemeHttpTestCase
                     ->where('scheme.versions.2.lifecycle_status', 'draft')
                     ->where('scheme.versions.2.is_immutable', false)
                     ->where('scheme.versions.2.can_edit', true)
+            );
+    }
+
+    public function test_detail_computes_current_superseded_and_scheduled_version_states(): void
+    {
+        CarbonImmutable::setTestNow('2026-07-24 12:00:00');
+        $user = $this->user();
+        $scheme = $this->scheme($user);
+        $recipient = $this->recipient();
+        $first = $this->draft($scheme, $user, [
+            'effective_from' => '2026-07-01',
+        ]);
+        $second = $this->draft($scheme, $user, [
+            'effective_from' => '2026-07-15',
+        ]);
+        $scheduled = $this->draft($scheme, $user, [
+            'effective_from' => '2026-08-01',
+        ]);
+
+        foreach ([$first, $second, $scheduled] as $version) {
+            $this->allocations($version, [[
+                'profit_recipient_id' => $recipient->id,
+                'percentage' => '100.0000',
+            ]]);
+            $this->publish($version);
+        }
+
+        $this->actingAs($user)
+            ->get(route('profit-schemes.show', $scheme))
+            ->assertInertia(
+                fn (Assert $page) => $page
+                    ->where(
+                        'scheme.versions.0.version_status',
+                        'scheduled'
+                    )
+                    ->where('scheme.versions.0.is_published', true)
+                    ->where('scheme.versions.0.is_immutable', true)
+                    ->where(
+                        'scheme.versions.1.version_status',
+                        'current'
+                    )
+                    ->where(
+                        'scheme.versions.2.version_status',
+                        'superseded'
+                    )
+            );
+    }
+
+    public function test_detail_marks_selected_current_version_inactive_without_resurrecting_older_version(): void
+    {
+        CarbonImmutable::setTestNow('2026-07-24 12:00:00');
+        $user = $this->user();
+        $scheme = $this->scheme($user);
+        $recipient = $this->recipient();
+        $first = $this->draft($scheme, $user);
+        $second = $this->draft($scheme, $user);
+
+        foreach ([$first, $second] as $version) {
+            $this->allocations($version, [[
+                'profit_recipient_id' => $recipient->id,
+                'percentage' => '100.0000',
+            ]]);
+            $this->publish($version);
+        }
+
+        $second->update(['is_active' => false]);
+
+        $this->actingAs($user)
+            ->get(route('profit-schemes.show', $scheme))
+            ->assertInertia(
+                fn (Assert $page) => $page
+                    ->where(
+                        'scheme.versions.0.version_status',
+                        'current'
+                    )
+                    ->where('scheme.versions.0.is_active', false)
+                    ->where(
+                        'scheme.versions.1.version_status',
+                        'superseded'
+                    )
             );
     }
 

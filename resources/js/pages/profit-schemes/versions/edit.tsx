@@ -8,6 +8,7 @@ import PublishVersionDialog from '@/components/profit-schemes/publish-version-di
 import VersionForm from '@/components/profit-schemes/version-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { formatPercentage } from '@/lib/percentage';
 import {
     Card,
     CardContent,
@@ -203,7 +204,7 @@ function ReadOnlyAllocations({
                                 )}
                             </div>
                             <p className="font-mono text-sm font-semibold">
-                                {allocation.percentage}%
+                                {formatPercentage(allocation.percentage)}
                             </p>
                         </div>
                     );
@@ -211,7 +212,7 @@ function ReadOnlyAllocations({
             </div>
             <div className="flex justify-between border-t bg-muted/30 px-4 py-3 text-sm font-semibold">
                 <span>Total</span>
-                <span className="font-mono">{total}%</span>
+                <span className="font-mono">{formatPercentage(total)}</span>
             </div>
         </div>
     );

@@ -71,7 +71,9 @@ class CompleteTransactionLifecycleTest extends TransactionActionTestCase
             'default_selling_price' => '150.00',
             'default_production_cost' => '100.00',
         ]);
-        $this->createPublishedRule();
+        $this->createPublishedRule(
+            $product->category()->firstOrFail()
+        );
         $transaction = $this->createDraft(
             $this->validPayload($product)
         );

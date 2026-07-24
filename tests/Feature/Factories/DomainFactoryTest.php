@@ -51,6 +51,32 @@ class DomainFactoryTest extends TestCase
         $this->assertFalse(Investor::factory()->inactive()->create()->is_active);
     }
 
+    public function test_contact_factories_emit_local_indonesian_phone_numbers(): void
+    {
+        $phones = [
+            ...Customer::factory()->count(20)->make()->pluck('phone'),
+            ...Investor::factory()->count(20)->make()->pluck('phone'),
+        ];
+        $generatedPhones = array_values(
+            array_filter(
+                $phones,
+                static fn (mixed $phone): bool => is_string($phone)
+            )
+        );
+
+        $this->assertNotEmpty($generatedPhones);
+        $this->assertSame(
+            [],
+            array_values(array_filter(
+                $generatedPhones,
+                static fn (string $phone): bool => preg_match(
+                    '/^0[1-9][0-9]{7,12}$/',
+                    $phone
+                ) !== 1
+            ))
+        );
+    }
+
     public function test_profit_recipient_states_satisfy_type_and_investor_constraints(): void
     {
         $investorRecipient = ProfitRecipient::factory()->create();
@@ -71,7 +97,7 @@ class DomainFactoryTest extends TestCase
         $effectiveDate = CarbonImmutable::parse('2026-07-15');
 
         $published = ProfitSchemeVersion::factory()->published()->create();
-        $general = ProfitSchemeVersion::factory()->general()->create();
+        $categoryRequired = ProfitSchemeVersion::factory()->create();
         $categorySpecific = ProfitSchemeVersion::factory()
             ->forCategory($category)
             ->effectiveOn($effectiveDate)
@@ -79,7 +105,7 @@ class DomainFactoryTest extends TestCase
 
         $this->assertNotNull($published->published_at);
         $this->assertCount(0, $published->allocations);
-        $this->assertNull($general->product_category_id);
+        $this->assertNotNull($categoryRequired->product_category_id);
         $this->assertSame($category->id, $categorySpecific->product_category_id);
         $this->assertSame('2026-07-15', $categorySpecific->effective_from->toDateString());
         $this->assertNull($categorySpecific->effective_until);

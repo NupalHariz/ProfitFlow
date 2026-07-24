@@ -24,6 +24,18 @@ export function formatPercentageUnits(units: number): string {
     return `${whole}.${fraction}`;
 }
 
+export function formatPercentage(value: string): string {
+    const match = /^(-?)(\d+)(?:\.(\d{1,4}))?$/.exec(value);
+
+    if (!match) {
+        return `${value}%`;
+    }
+
+    const fraction = (match[3] ?? '').replace(/0+$/, '');
+
+    return `${match[1]}${match[2]}${fraction === '' ? '' : `,${fraction}`}%`;
+}
+
 export type PercentageTotal = {
     state: 'ready' | 'incomplete' | 'exceeds' | 'invalid';
     units: number | null;

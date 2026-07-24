@@ -31,14 +31,12 @@ class HistoricalIntegrityTest extends ProfitRecipientActionTestCase
             'display_name' => 'Original Recipient Name',
         ]);
         $draftVersion = ProfitSchemeVersion::factory()
-            ->general()
             ->create();
         $draftAllocation = ProfitSchemeAllocation::factory()
             ->for($draftVersion, 'version')
             ->for($recipient, 'recipient')
             ->create(['percentage' => '25.0000']);
         $publishedVersion = ProfitSchemeVersion::factory()
-            ->general()
             ->published()
             ->create();
         $publishedAllocation = ProfitSchemeAllocation::factory()

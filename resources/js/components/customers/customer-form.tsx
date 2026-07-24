@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { formatIndonesianPhoneNumber } from '@/lib/phone';
 import type { CustomerFormData } from '@/types';
 
 type Props =
@@ -30,7 +31,9 @@ export default function CustomerForm({ mode, customer }: Props) {
                     <InputError message={errors.customer} />
 
                     <div className="grid gap-2">
-                        <Label htmlFor="name">Name</Label>
+                        <Label htmlFor="name" required>
+                            Name
+                        </Label>
                         <Input
                             id="name"
                             name="name"
@@ -63,7 +66,11 @@ export default function CustomerForm({ mode, customer }: Props) {
                                 id="phone"
                                 name="phone"
                                 type="tel"
-                                defaultValue={customer?.phone ?? ''}
+                                defaultValue={
+                                    formatIndonesianPhoneNumber(
+                                        customer?.phone ?? null,
+                                    ) ?? ''
+                                }
                                 maxLength={40}
                                 placeholder="0812 3456 7890"
                             />

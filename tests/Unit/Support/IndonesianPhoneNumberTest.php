@@ -28,16 +28,16 @@ class IndonesianPhoneNumberTest extends TestCase
         return [
             'null' => [null, null],
             'blank' => ['  ', null],
-            'local mobile' => ['0812 3456-7890', '+6281234567890'],
-            'country code mobile' => ['62 (812) 3456 7890', '+6281234567890'],
+            'local mobile' => ['0812 3456-7890', '081234567890'],
+            'country code mobile' => ['62 (812) 3456 7890', '081234567890'],
             'international mobile' => [
                 '+62-812-3456-7890',
-                '+6281234567890',
+                '081234567890',
             ],
-            'local landline' => ['(021) 555-0101', '+62215550101'],
+            'local landline' => ['(021) 555-0101', '0215550101'],
             'international landline' => [
                 '+62 274 555 0104',
-                '+622745550104',
+                '02745550104',
             ],
         ];
     }
@@ -87,10 +87,23 @@ class IndonesianPhoneNumberTest extends TestCase
     {
         return [
             'local' => ['0812', '+62812'],
-            'country code' => ['62 812', '+62812'],
-            'international' => ['+62-812', '+62812'],
+            'country code' => ['62 812', '0812'],
+            'international' => ['+62-812', '0812'],
             'name search' => ['Naufal', null],
             'unsupported country' => ['+1 555', null],
         ];
+    }
+
+    public function test_local_normalization_is_idempotent(): void
+    {
+        $normalized = IndonesianPhoneNumber::normalize(
+            '+62 812 3456 7890'
+        );
+
+        $this->assertSame('081234567890', $normalized);
+        $this->assertSame(
+            $normalized,
+            IndonesianPhoneNumber::normalize($normalized)
+        );
     }
 }

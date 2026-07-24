@@ -33,7 +33,9 @@ export default function ProductCategoryForm({ mode, category }: Props) {
                     <InputError message={errors.category} />
 
                     <div className="grid gap-2">
-                        <Label htmlFor="name">Name</Label>
+                        <Label htmlFor="name" required>
+                            Name
+                        </Label>
                         <Input
                             id="name"
                             name="name"

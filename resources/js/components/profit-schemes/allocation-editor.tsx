@@ -13,7 +13,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { percentageTotal } from '@/lib/percentage';
+import { formatPercentage, percentageTotal } from '@/lib/percentage';
 import type { ProfitRecipientLookup, ProfitSchemeAllocation } from '@/types';
 
 type AllocationRow = {
@@ -150,7 +150,9 @@ export default function AllocationEditor({
                                 Allocation total
                             </p>
                             <p className="font-mono text-2xl font-semibold">
-                                {total.formatted ?? '—'}%
+                                {total.formatted === null
+                                    ? '—'
+                                    : formatPercentage(total.formatted)}
                             </p>
                         </div>
                         <Badge
@@ -193,6 +195,7 @@ export default function AllocationEditor({
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor={`allocation-recipient-${row.key}`}
+                                            required
                                         >
                                             Recipient {index + 1}
                                         </Label>
@@ -296,6 +299,7 @@ export default function AllocationEditor({
                                     <div className="grid gap-2">
                                         <Label
                                             htmlFor={`allocation-percentage-${row.key}`}
+                                            required
                                         >
                                             Percentage
                                         </Label>

@@ -2,6 +2,11 @@
 
 namespace Tests\Feature\Ui;
 
+use App\Http\Requests\Products\StoreProductRequest;
+use App\Http\Requests\ProfitRecipients\StoreProfitRecipientRequest;
+use App\Http\Requests\ProfitSchemes\StoreProfitSchemeVersionRequest;
+use App\Http\Requests\ProfitSchemes\UpdateProfitSchemeVersionRequest;
+use App\Http\Requests\Transactions\StoreTransactionRequest;
 use Tests\TestCase;
 
 class PresentationCopyTest extends TestCase
@@ -167,7 +172,11 @@ class PresentationCopyTest extends TestCase
             $dashboard
         );
         $this->assertStringContainsString(
-            'Higher-priority rules are applied first.',
+            'Higher-priority Schemes are',
+            $schemeForm
+        );
+        $this->assertStringContainsString(
+            'replaces earlier versions',
             $schemeForm
         );
         $this->assertStringContainsString(
@@ -226,6 +235,234 @@ class PresentationCopyTest extends TestCase
         $this->assertStringContainsString(
             'Unavailable recipients must be replaced before',
             $allocationEditor
+        );
+    }
+
+    public function test_business_forms_mark_backend_required_fields_without_marking_optional_fields(): void
+    {
+        $productRules = (new StoreProductRequest)->rules();
+        $recipientRules = (new StoreProfitRecipientRequest)->rules();
+        $storeVersionRules = (new StoreProfitSchemeVersionRequest)->rules();
+        $updateVersionRules = (new UpdateProfitSchemeVersionRequest)->rules();
+        $transactionRules = (new StoreTransactionRequest)->rules();
+
+        $this->assertContains(
+            'required',
+            $productRules['default_selling_price']
+        );
+        $this->assertContains('nullable', $productRules['description']);
+        $this->assertContains(
+            'required_if:type,investor',
+            $recipientRules['investor_id']
+        );
+        $this->assertContains(
+            'nullable',
+            $transactionRules['items.*.unit_selling_price']
+        );
+        $this->assertContains(
+            'required',
+            $storeVersionRules['product_category_id']
+        );
+        $this->assertContains(
+            'required',
+            $updateVersionRules['product_category_id']
+        );
+
+        $label = $this->source('js/components/ui/label.tsx');
+
+        $this->assertStringContainsString('required?: boolean', $label);
+        $this->assertStringContainsString('aria-hidden="true"', $label);
+        $this->assertStringContainsString('(required)', $label);
+
+        foreach ([
+            'js/components/product-categories/product-category-form.tsx' => [
+                '<Label htmlFor="name" required>',
+                '<Label htmlFor="description">Description</Label>',
+            ],
+            'js/components/products/product-form.tsx' => [
+                '<Label htmlFor="product_category_id" required>',
+                '<Label htmlFor="description">Description</Label>',
+            ],
+            'js/components/customers/customer-form.tsx' => [
+                '<Label htmlFor="name" required>',
+                '<Label htmlFor="email">Email</Label>',
+            ],
+            'js/components/investors/investor-form.tsx' => [
+                '<Label htmlFor="name" required>',
+                '<Label htmlFor="phone">Phone</Label>',
+            ],
+            'js/components/profit-schemes/version-form.tsx' => [
+                '<Label htmlFor="product_category_id" required>',
+                '<Label htmlFor="effective_until">',
+            ],
+            'js/components/transactions/transaction-form.tsx' => [
+                '<Label htmlFor="customer_id" required>',
+                '<Label htmlFor="transaction_date" required>',
+            ],
+        ] as $path => [$requiredField, $optionalOrRequiredPeer]) {
+            $form = $this->source($path);
+
+            $this->assertStringContainsString($requiredField, $form);
+            $this->assertStringContainsString(
+                $optionalOrRequiredPeer,
+                $form
+            );
+        }
+
+        $recipientForm = $this->source(
+            'js/components/profit-recipients/profit-recipient-form.tsx'
+        );
+        $this->assertStringContainsString(
+            '<Label htmlFor="investor_id" required>',
+            $recipientForm
+        );
+        $this->assertStringContainsString(
+            "type === 'investor'",
+            $recipientForm
+        );
+    }
+
+    public function test_editable_money_inputs_normalize_only_server_provided_initial_values(): void
+    {
+        $money = $this->source('js/lib/money.ts');
+        $product = $this->source(
+            'js/components/products/product-form.tsx'
+        );
+        $scheme = $this->source(
+            'js/components/profit-schemes/version-form.tsx'
+        );
+        $transaction = $this->source(
+            'js/components/transactions/transaction-form.tsx'
+        );
+
+        $this->assertStringContainsString(
+            '/^(-?\\d+)\\.00$/',
+            $money
+        );
+        $this->assertMatchesRegularExpression(
+            '/formatEditableDecimal\(\s*product\.default_selling_price/',
+            $product
+        );
+        $this->assertMatchesRegularExpression(
+            '/formatEditableDecimal\(\s*product\.default_production_cost/',
+            $product
+        );
+        $this->assertMatchesRegularExpression(
+            '/formatEditableDecimal\(\s*version\.minimum_profit/',
+            $scheme
+        );
+        $this->assertMatchesRegularExpression(
+            '/formatEditableDecimal\(\s*version\.maximum_profit/',
+            $scheme
+        );
+        $this->assertMatchesRegularExpression(
+            '/unitSellingPrice:\s*formatEditableDecimal\(\s*'.
+                'item\.unit_selling_price/',
+            $transaction
+        );
+
+        foreach ([$money, $product, $scheme, $transaction] as $source) {
+            $this->assertStringNotContainsString('parseFloat(', $source);
+            $this->assertStringNotContainsString('Number(', $source);
+        }
+    }
+
+    public function test_profit_scheme_category_selector_is_required_and_has_no_general_option(): void
+    {
+        $scheme = $this->source(
+            'js/components/profit-schemes/version-form.tsx'
+        );
+        $lowercase = strtolower($scheme);
+
+        $this->assertStringContainsString(
+            '<Label htmlFor="product_category_id" required>',
+            $scheme
+        );
+        $this->assertStringContainsString(
+            'placeholder="Select a category"',
+            $scheme
+        );
+        $this->assertStringContainsString(
+            'message={errors.product_category_id}',
+            $scheme
+        );
+
+        foreach ([
+            'general',
+            'all categories',
+            'any category',
+            'no category',
+        ] as $removedOption) {
+            $this->assertStringNotContainsString(
+                $removedOption,
+                $lowercase
+            );
+        }
+    }
+
+    public function test_product_and_investor_forms_use_business_guidance(): void
+    {
+        $product = $this->source('js/components/products/product-form.tsx');
+        $productCreate = $this->source('js/pages/products/create.tsx');
+        $investor = $this->source(
+            'js/components/investors/investor-form.tsx'
+        );
+
+        foreach ([
+            'Use a unique SKU for this product.',
+            'Used as the default selling price in draft',
+            'Used to calculate profit in draft transactions.',
+            'Available for transactions when its',
+        ] as $copy) {
+            $this->assertStringContainsString($copy, $product);
+        }
+        $this->assertStringContainsString(
+            'Add a product for use in transactions.',
+            $productCreate
+        );
+        $this->assertStringNotContainsString('case-sensitive', $product);
+        $this->assertStringNotContainsString(
+            'non-negative values with up to two decimal places',
+            $product
+        );
+
+        $this->assertStringContainsString(
+            'Active Investors can be linked to Profit',
+            $investor
+        );
+        $this->assertStringContainsString(
+            'Investor and Profit Recipient have different roles',
+            $investor
+        );
+        $this->assertStringContainsString(
+            'An Investor represents the owner of the funds.',
+            $investor
+        );
+        $this->assertStringNotContainsString(
+            'remain available for management',
+            $investor
+        );
+    }
+
+    public function test_profit_scheme_history_explains_version_supersession(): void
+    {
+        $show = $this->source('js/pages/profit-schemes/show.tsx');
+
+        foreach ([
+            'Current',
+            'Scheduled',
+            'Superseded',
+            'Inactive',
+            'Read-only',
+            'New transactions use the latest applicable version',
+            'Previous versions remain',
+        ] as $copy) {
+            $this->assertStringContainsString($copy, $show);
+        }
+
+        $this->assertStringContainsString(
+            'Published versions cannot be edited.',
+            $show
         );
     }
 

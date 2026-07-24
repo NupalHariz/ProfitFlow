@@ -102,7 +102,7 @@ export default function TransactionItemEditor({
 
                 <div className="grid gap-5 lg:grid-cols-2">
                     <div className="grid gap-2 lg:col-span-2">
-                        <Label htmlFor={`items-${index}-product`}>
+                        <Label htmlFor={`items-${index}-product`} required>
                             Product
                         </Label>
                         <input
@@ -159,7 +159,7 @@ export default function TransactionItemEditor({
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor={`items-${index}-quantity`}>
+                        <Label htmlFor={`items-${index}-quantity`} required>
                             Quantity
                         </Label>
                         <Input
@@ -227,7 +227,7 @@ export default function TransactionItemEditor({
                             value={formatRupiah(product.default_selling_price)}
                         />
                         <ReferenceValue
-                            label="Trusted production cost"
+                            label="Production cost"
                             value={formatRupiah(
                                 product.default_production_cost,
                             )}
