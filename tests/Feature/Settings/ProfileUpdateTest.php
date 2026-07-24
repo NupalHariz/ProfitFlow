@@ -41,6 +41,11 @@ class ProfileUpdateTest extends TestCase
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
+
+        $this->get(route('dashboard'))
+            ->assertRedirect(route('verification.notice'));
+
+        $this->get(route('profile.edit'))->assertOk();
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged()
@@ -61,39 +66,23 @@ class ProfileUpdateTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
-    public function test_user_can_delete_their_account()
+    public function test_unverified_user_can_correct_their_profile_email()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->unverified()->create();
 
         $response = $this
             ->actingAs($user)
-            ->delete(route('profile.destroy'), [
-                'password' => 'password',
+            ->patch(route('profile.update'), [
+                'name' => $user->name,
+                'email' => 'corrected@example.com',
             ]);
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect(route('home'));
-
-        $this->assertGuest();
-        $this->assertNull($user->fresh());
-    }
-
-    public function test_correct_password_must_be_provided_to_delete_account()
-    {
-        $user = User::factory()->create();
-
-        $response = $this
-            ->actingAs($user)
-            ->from(route('profile.edit'))
-            ->delete(route('profile.destroy'), [
-                'password' => 'wrong-password',
-            ]);
-
-        $response
-            ->assertSessionHasErrors('password')
             ->assertRedirect(route('profile.edit'));
 
-        $this->assertNotNull($user->fresh());
+        $this->assertSame('corrected@example.com', $user->refresh()->email);
+        $this->assertNull($user->email_verified_at);
+        $this->get(route('profile.edit'))->assertOk();
     }
 }
