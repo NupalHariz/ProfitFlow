@@ -68,7 +68,7 @@ export default function InvestorForm({ mode, investor }: Props) {
                                 type="tel"
                                 defaultValue={investor?.phone ?? ''}
                                 maxLength={40}
-                                placeholder="+62 812 3456 7890"
+                                placeholder="0812 3456 7890"
                             />
                             <InputError message={errors.phone} />
                         </div>
@@ -94,8 +94,8 @@ export default function InvestorForm({ mode, investor }: Props) {
                                         Active Investor
                                     </Label>
                                     <p className="text-xs text-muted-foreground">
-                                        Investor status belongs only to this
-                                        business profile.
+                                        Active Investors remain available for
+                                        management.
                                     </p>
                                 </div>
                             </div>
@@ -109,8 +109,8 @@ export default function InvestorForm({ mode, investor }: Props) {
                         </AlertTitle>
                         <AlertDescription>
                             {mode === 'create'
-                                ? 'Creating an Investor does not automatically create a Profit Recipient. Profit Recipient setup is managed separately.'
-                                : 'Changing the Investor name or contact details does not rename or modify the linked Profit Recipient.'}
+                                ? 'Create the Profit Recipient separately if this Investor will receive an allocation.'
+                                : 'Contact changes do not change the linked Profit Recipient.'}
                         </AlertDescription>
                     </Alert>
 

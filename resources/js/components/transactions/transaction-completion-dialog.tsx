@@ -31,11 +31,8 @@ export default function TransactionCompletionDialog({
                 <DialogHeader>
                     <DialogTitle>Complete this transaction?</DialogTitle>
                     <DialogDescription>
-                        This permanently ends draft editing. Financial totals
-                        will be finalized from the stored item snapshots, the
-                        applicable rule version will be frozen for every
-                        profitable item, and profit distribution will run
-                        asynchronously.
+                        Completing ends draft editing, finalizes totals and
+                        applied rules, then starts profit distribution.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -59,7 +56,7 @@ export default function TransactionCompletionDialog({
                                 <Button disabled={processing}>
                                     {processing
                                         ? 'Completing…'
-                                        : 'Complete and queue'}
+                                        : 'Complete transaction'}
                                 </Button>
                             </DialogFooter>
                         </>

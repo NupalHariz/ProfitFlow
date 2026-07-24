@@ -39,9 +39,9 @@ export default function PublishVersionDialog({
                 <DialogHeader>
                     <DialogTitle>Publish version {versionNumber}?</DialogTitle>
                     <DialogDescription>
-                        Publication requires exactly 100.0000% in active
-                        recipients and makes every rule and allocation field
-                        immutable. Any later change requires a new version.
+                        Publishing requires active recipients and allocations
+                        totaling exactly 100%. Published versions cannot be
+                        edited.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -58,7 +58,11 @@ export default function PublishVersionDialog({
                             <InputError message={errors.allocations} />
                             <DialogFooter>
                                 <DialogClose asChild>
-                                    <Button type="button" variant="outline">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        disabled={processing}
+                                    >
                                         Cancel
                                     </Button>
                                 </DialogClose>

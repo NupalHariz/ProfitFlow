@@ -44,8 +44,8 @@ export default function ProductCategoryStatusDialog({
                     </DialogTitle>
                     <DialogDescription>
                         {activating
-                            ? 'Active products under this category can become available to new or resubmitted transaction drafts again.'
-                            : 'Products under this category keep their own active/inactive state, but they cannot be selected for new or resubmitted transaction drafts while the category is inactive.'}
+                            ? 'Products in this category can be selected for draft transactions again.'
+                            : 'Products in this category cannot be selected for new or updated draft transactions while it is inactive.'}
                     </DialogDescription>
                 </DialogHeader>
 

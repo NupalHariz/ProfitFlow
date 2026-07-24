@@ -15,7 +15,6 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { percentageTotal } from '@/lib/percentage';
 import type {
     ProfitRecipientLookup,
     ProfitSchemeCategoryLookup,
@@ -38,7 +37,6 @@ export default function EditProfitSchemeVersion({
     categories,
     recipients,
     allocation_recipients,
-    lookup_limit,
 }: PageProps) {
     const ruleForm = ProfitSchemeVersionController.update.form({
         scheme: scheme.id,
@@ -48,23 +46,6 @@ export default function EditProfitSchemeVersion({
         scheme: scheme.id,
         version: version.id,
     });
-    const currentTotal = percentageTotal(
-        version.allocations.map((allocation) => allocation.percentage),
-    );
-    const containsUnavailableRecipient = version.allocations.some(
-        (allocation) => {
-            const recipient = allocation_recipients.find(
-                (candidate) => candidate.id === allocation.profit_recipient_id,
-            );
-
-            return recipient === undefined || !recipient.is_available;
-        },
-    );
-    const canPublish =
-        version.can_edit &&
-        version.is_active &&
-        currentTotal.state === 'ready' &&
-        !containsUnavailableRecipient;
 
     return (
         <>
@@ -99,8 +80,8 @@ export default function EditProfitSchemeVersion({
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">
                             {version.can_edit
-                                ? 'Save rule fields and the complete ordered allocation list independently.'
-                                : 'This version is immutable. Review its stored values below.'}
+                                ? 'Update the rule and its allocations.'
+                                : 'This version can no longer be edited.'}
                         </p>
                     </div>
 
@@ -109,7 +90,7 @@ export default function EditProfitSchemeVersion({
                             schemeId={scheme.id}
                             versionId={version.id}
                             versionNumber={version.version}
-                            disabled={!canPublish}
+                            disabled={!version.is_ready_to_publish}
                         />
                     )}
                 </div>
@@ -117,9 +98,8 @@ export default function EditProfitSchemeVersion({
                 {version.is_historically_referenced &&
                     !version.is_published && (
                         <p className="rounded-md border border-amber-600/30 bg-amber-500/10 p-4 text-sm text-amber-800 dark:text-amber-300">
-                            This draft is locked by historical transaction-item
-                            usage. Rule fields and allocations are shown for
-                            audit only.
+                            This version has been used by a transaction and can
+                            no longer be edited.
                         </p>
                     )}
 
@@ -147,8 +127,7 @@ export default function EditProfitSchemeVersion({
                     <CardHeader>
                         <CardTitle>Allocation editor</CardTitle>
                         <CardDescription>
-                            Replace the complete allocation list. Explicit row
-                            order is preserved for deterministic rounding.
+                            Define how profit will be shared between recipients.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -169,16 +148,6 @@ export default function EditProfitSchemeVersion({
                         )}
                     </CardContent>
                 </Card>
-
-                {version.can_edit && (
-                    <p className="text-xs text-muted-foreground">
-                        Recipient choices are currently a bounded list of up to{' '}
-                        {lookup_limit} available records. Existing unavailable
-                        allocations are shown separately for context.
-                        Server-side searchable selection is the planned scaling
-                        path.
-                    </p>
-                )}
             </div>
         </>
     );
@@ -196,7 +165,7 @@ function ReadOnlyAllocations({
     if (allocations.length === 0) {
         return (
             <p className="rounded-md border border-dashed p-5 text-center text-sm text-muted-foreground">
-                No allocations stored.
+                No allocations configured.
             </p>
         );
     }
@@ -223,7 +192,7 @@ function ReadOnlyAllocations({
                                 <p className="font-mono text-xs text-muted-foreground">
                                     {recipient?.code ?? 'Unavailable'}
                                     {recipient && !recipient.is_available
-                                        ? ' · currently unavailable for draft allocation'
+                                        ? ' · unavailable for new draft allocations'
                                         : ''}
                                 </p>
                                 {recipient?.investor && (

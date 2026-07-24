@@ -236,6 +236,32 @@ class ProfitSchemeAllocationAndPublicationTest extends ProfitSchemeHttpTestCase
             'percentage' => '100.0000',
         ]]);
 
+        foreach ([
+            route('profit-schemes.versions.edit', [
+                'scheme' => $scheme,
+                'version' => $version,
+            ]) => 'version',
+            route('profit-schemes.show', $scheme) => 'scheme.versions.0',
+        ] as $url => $versionPath) {
+            $this->actingAs($user)
+                ->get($url)
+                ->assertInertia(
+                    fn (Assert $page) => $page
+                        ->where(
+                            "{$versionPath}.allocation_total",
+                            '100.0000'
+                        )
+                        ->where(
+                            "{$versionPath}.unavailable_allocation_count",
+                            0
+                        )
+                        ->where(
+                            "{$versionPath}.is_ready_to_publish",
+                            true
+                        )
+                );
+        }
+
         $this->actingAs($user)
             ->post(route('profit-schemes.versions.publish', [
                 'scheme' => $scheme,

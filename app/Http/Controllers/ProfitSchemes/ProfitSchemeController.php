@@ -256,11 +256,11 @@ class ProfitSchemeController extends Controller
                 $this->allocationPercentage($allocation)
             )
         );
-        $allRecipientsAvailable = $version->allocations->every(
-            fn (ProfitSchemeAllocation $allocation): bool => isset(
+        $unavailableAllocationCount = $version->allocations->filter(
+            fn (ProfitSchemeAllocation $allocation): bool => ! isset(
                 $availableRecipientLookup[$allocation->profit_recipient_id]
             )
-        );
+        )->count();
 
         return [
             'id' => $version->id,
@@ -300,10 +300,11 @@ class ProfitSchemeController extends Controller
             'allocation_total' => FixedDecimal::formatPercentage(
                 $allocationTotalUnits
             ),
+            'unavailable_allocation_count' => $unavailableAllocationCount,
             'is_ready_to_publish' => ! $published
                 && ! $historicallyReferenced
                 && $version->is_active
-                && $allRecipientsAvailable
+                && $unavailableAllocationCount === 0
                 && $allocationTotalUnits
                     === FixedDecimal::PERCENTAGE_TOTAL_UNITS,
             'allocations' => $version->allocations

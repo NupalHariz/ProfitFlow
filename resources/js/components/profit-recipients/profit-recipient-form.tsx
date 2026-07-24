@@ -176,8 +176,7 @@ export default function ProfitRecipientForm(props: Props) {
                                     <p className="text-xs text-muted-foreground">
                                         Active and inactive Investors may be
                                         linked. Only unlinked profiles are
-                                        listed, up to{' '}
-                                        {props.investorOptionLimit}.
+                                        listed.
                                     </p>
                                     <InputError message={errors.investor_id} />
                                 </div>
@@ -190,13 +189,11 @@ export default function ProfitRecipientForm(props: Props) {
                                     />
                                     <Alert>
                                         <AlertTitle>
-                                            Company allocation identity
+                                            Company recipient
                                         </AlertTitle>
                                         <AlertDescription>
                                             Company recipients are not linked to
-                                            Investor profiles. Multiple Company
-                                            recipients may exist with different
-                                            unique codes.
+                                            Investor profiles.
                                         </AlertDescription>
                                     </Alert>
                                     <InputError message={errors.investor_id} />
@@ -222,8 +219,8 @@ export default function ProfitRecipientForm(props: Props) {
                                             Active Profit Recipient
                                         </Label>
                                         <p className="text-xs text-muted-foreground">
-                                            Recipient status is independent from
-                                            Investor status.
+                                            Active recipients can be used in
+                                            editable allocations.
                                         </p>
                                     </div>
                                 </div>
@@ -231,13 +228,10 @@ export default function ProfitRecipientForm(props: Props) {
                             </div>
 
                             <Alert>
-                                <AlertTitle>
-                                    Identity becomes immutable
-                                </AlertTitle>
+                                <AlertTitle>Recipient assignment</AlertTitle>
                                 <AlertDescription>
                                     Recipient type and Investor linkage cannot
-                                    be changed after creation because scheme
-                                    allocations reference this identity.
+                                    be changed after creation.
                                 </AlertDescription>
                             </Alert>
                         </>
@@ -274,14 +268,10 @@ export default function ProfitRecipientForm(props: Props) {
                             </div>
 
                             <Alert>
-                                <AlertTitle>
-                                    Allocation identity is read-only
-                                </AlertTitle>
+                                <AlertTitle>Recipient assignment</AlertTitle>
                                 <AlertDescription>
                                     Recipient type and Investor linkage cannot
-                                    be changed after creation. Updating the code
-                                    or display name does not modify the linked
-                                    Investor or existing financial history.
+                                    be changed after creation.
                                 </AlertDescription>
                             </Alert>
                         </>

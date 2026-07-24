@@ -48,8 +48,7 @@ export default function ProductCategoryIndex({
                             Product categories
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Organize product master data and control effective
-                            transaction availability by category.
+                            Organize products and manage category availability.
                         </p>
                     </div>
                     <Button asChild>
@@ -72,6 +71,7 @@ export default function ProductCategoryIndex({
                                     name="search"
                                     defaultValue={filters.search}
                                     placeholder="Search name or description"
+                                    aria-label="Search product categories"
                                     className="pl-9"
                                 />
                             </div>
@@ -84,7 +84,10 @@ export default function ProductCategoryIndex({
                                     )
                                 }
                             >
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger
+                                    className="w-full"
+                                    aria-label="Filter product categories by status"
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -140,9 +143,6 @@ export default function ProductCategoryIndex({
                                                 <CardTitle>
                                                     {category.name}
                                                 </CardTitle>
-                                                <CardDescription className="mt-1 font-mono">
-                                                    {category.slug}
-                                                </CardDescription>
                                             </div>
                                             <ProductCategoryStatusBadge
                                                 active={category.is_active}
@@ -230,9 +230,6 @@ export default function ProductCategoryIndex({
                                                 <td className="px-5 py-4">
                                                     <p className="font-medium">
                                                         {category.name}
-                                                    </p>
-                                                    <p className="font-mono text-xs text-muted-foreground">
-                                                        {category.slug}
                                                     </p>
                                                 </td>
                                                 <td className="max-w-sm px-5 py-4 text-muted-foreground">

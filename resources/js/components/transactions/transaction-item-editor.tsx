@@ -93,10 +93,9 @@ export default function TransactionItemEditor({
                     <div className="flex gap-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
                         <AlertTriangle className="mt-0.5 size-4 shrink-0" />
                         <p>
-                            The stored product or its category is now
-                            unavailable. Select an available product before
-                            saving. The historical snapshot remains visible
-                            below.
+                            The previously selected product is no longer
+                            available. Choose a replacement before saving. Its
+                            saved details remain below.
                         </p>
                     </div>
                 )}
@@ -277,7 +276,7 @@ function StoredSnapshot({ snapshot }: { snapshot: TransactionItemSnapshot }) {
     return (
         <div className="rounded-lg border border-dashed p-4">
             <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                Stored draft snapshot
+                Saved item details
             </p>
             <p className="mt-2 font-medium">
                 {snapshot.product_name_snapshot}{' '}
@@ -286,8 +285,8 @@ function StoredSnapshot({ snapshot }: { snapshot: TransactionItemSnapshot }) {
                 </span>
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-                {snapshot.category_name_snapshot ?? 'No category snapshot'} ·
-                Selling {formatRupiah(snapshot.unit_selling_price)} · Cost{' '}
+                {snapshot.category_name_snapshot ?? 'No category'} · Selling{' '}
+                {formatRupiah(snapshot.unit_selling_price)} · Cost{' '}
                 {formatRupiah(snapshot.unit_production_cost)}
             </p>
         </div>

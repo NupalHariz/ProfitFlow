@@ -43,10 +43,7 @@ export default function EditTransaction({
                         Edit draft transaction
                     </h1>
                     <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-                        Saving replaces the complete ordered draft. Stored
-                        selling prices initialize as explicit values so the
-                        current financial result remains unchanged unless you
-                        edit or clear them.
+                        Update this draft before completing it.
                     </p>
                 </div>
 
@@ -57,7 +54,7 @@ export default function EditTransaction({
                     customers={customers}
                     products={products}
                     lookupLimit={lookup_limit}
-                    submitLabel="Save complete draft"
+                    submitLabel="Save draft"
                 />
             </div>
         </>

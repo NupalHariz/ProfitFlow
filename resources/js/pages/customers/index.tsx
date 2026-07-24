@@ -11,6 +11,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { formatIndonesianPhoneNumber } from '@/lib/phone';
 import type {
     CustomerFilters,
     CustomerPagination,
@@ -58,6 +59,7 @@ export default function CustomerIndex({ filters, customers }: PageProps) {
                                     name="search"
                                     defaultValue={filters.search}
                                     placeholder="Search name, email, or phone"
+                                    aria-label="Search customers"
                                     className="pl-9"
                                 />
                             </div>
@@ -76,7 +78,7 @@ export default function CustomerIndex({ filters, customers }: PageProps) {
                 {customers.data.length === 0 ? (
                     <Card className="border-dashed">
                         <CardHeader className="items-center py-12 text-center">
-                            <CardTitle>No Customers found</CardTitle>
+                            <CardTitle>No customers found</CardTitle>
                             <CardDescription>
                                 Adjust the search or create the first Customer.
                             </CardDescription>
@@ -177,8 +179,9 @@ export default function CustomerIndex({ filters, customers }: PageProps) {
                                                             'No email'}
                                                     </p>
                                                     <p className="mt-1 text-xs text-muted-foreground">
-                                                        {customer.phone ??
-                                                            'No phone'}
+                                                        {formatIndonesianPhoneNumber(
+                                                            customer.phone,
+                                                        ) ?? 'No phone'}
                                                     </p>
                                                 </td>
                                                 <td className="px-5 py-4 tabular-nums">
@@ -282,7 +285,11 @@ function Pagination({ customers }: { customers: CustomerPagination }) {
 }
 
 function contactSummary(customer: CustomerSummary): string {
-    return customer.email ?? customer.phone ?? 'No contact details';
+    return (
+        customer.email ??
+        formatIndonesianPhoneNumber(customer.phone) ??
+        'No contact details'
+    );
 }
 
 function formatDate(value: string | null): string {

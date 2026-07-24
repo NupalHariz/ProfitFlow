@@ -4,13 +4,7 @@ import CustomerController from '@/actions/App/Http/Controllers/Customers/Custome
 import CustomerForm from '@/components/customers/customer-form';
 import DeleteCustomerDialog from '@/components/customers/delete-customer-dialog';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { CustomerFormData } from '@/types';
 
 export default function EditCustomer({
@@ -35,9 +29,7 @@ export default function EditCustomer({
                             Edit Customer
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Older transactions show this live Customer
-                            relationship, so profile edits may also appear
-                            there.
+                            Update Customer contact details.
                         </p>
                     </div>
                     <DeleteCustomerDialog
@@ -49,10 +41,6 @@ export default function EditCustomer({
                 <Card>
                     <CardHeader>
                         <CardTitle>Customer details</CardTitle>
-                        <CardDescription>
-                            Updating contact data never recalculates or changes
-                            transaction financial records.
-                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <CustomerForm mode="edit" customer={customer} />

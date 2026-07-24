@@ -98,7 +98,12 @@ class ProfitSchemeVersionController extends Controller
 
         return Inertia::render('profit-schemes/versions/edit', [
             'scheme' => $this->schemeSummary($scheme),
-            'version' => $this->versionData($version),
+            'version' => $this->versionData(
+                $version,
+                collect($recipientLookups['current'])
+                    ->where('is_available', false)
+                    ->count()
+            ),
             'categories' => $this->categoryLookups(
                 $version->product_category_id
             ),
@@ -358,8 +363,10 @@ class ProfitSchemeVersionController extends Controller
     /**
      * @return array<string, mixed>
      */
-    private function versionData(ProfitSchemeVersion $version): array
-    {
+    private function versionData(
+        ProfitSchemeVersion $version,
+        int $unavailableAllocationCount
+    ): array {
         $published = $version->published_at !== null;
         $historicallyReferenced = (int) $version->getAttribute(
             'applied_transaction_items_count'
@@ -392,6 +399,12 @@ class ProfitSchemeVersionController extends Controller
             'is_immutable' => $published || $historicallyReferenced,
             'can_edit' => ! $published && ! $historicallyReferenced,
             'allocation_total' => FixedDecimal::formatPercentage($totalUnits),
+            'unavailable_allocation_count' => $unavailableAllocationCount,
+            'is_ready_to_publish' => ! $published
+                && ! $historicallyReferenced
+                && $version->is_active
+                && $unavailableAllocationCount === 0
+                && $totalUnits === FixedDecimal::PERCENTAGE_TOTAL_UNITS,
             'allocations' => $version->allocations
                 ->map(
                     fn (

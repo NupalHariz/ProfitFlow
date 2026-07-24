@@ -20,6 +20,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { formatIndonesianPhoneNumber } from '@/lib/phone';
 import type {
     InvestorAllocationSummary,
     InvestorFormData,
@@ -57,8 +58,7 @@ export default function ShowInvestor({
                             <InvestorStatusBadge active={investor.is_active} />
                         </div>
                         <p className="mt-2 text-sm text-muted-foreground">
-                            Investor business profile and read-only allocation
-                            identity summary.
+                            Investor details and linked Profit Recipient.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -84,10 +84,6 @@ export default function ShowInvestor({
                 <Card>
                     <CardHeader>
                         <CardTitle>Investor profile</CardTitle>
-                        <CardDescription>
-                            Profile changes never synchronize a linked Profit
-                            Recipient or financial history.
-                        </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                         <ProfileValue
@@ -98,7 +94,10 @@ export default function ShowInvestor({
                         <ProfileValue
                             icon={Phone}
                             label="Phone"
-                            value={investor.phone ?? 'Not provided'}
+                            value={
+                                formatIndonesianPhoneNumber(investor.phone) ??
+                                'Not provided'
+                            }
                         />
                         <ProfileValue
                             icon={UserRound}
@@ -118,9 +117,8 @@ export default function ShowInvestor({
                     <CardHeader>
                         <CardTitle>Linked Profit Recipient</CardTitle>
                         <CardDescription>
-                            Investor and Profit Recipient status are
-                            independent. Recipient editing is not available in
-                            this checkpoint.
+                            Investor and Profit Recipient details are managed
+                            separately.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

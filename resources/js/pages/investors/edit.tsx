@@ -44,8 +44,7 @@ export default function EditInvestor({
                         <InvestorStatusBadge active={investor.is_active} />
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Edit only the Investor profile. Status and deletion are
-                        separate lifecycle actions.
+                        Update Investor details.
                     </p>
                 </div>
 
@@ -68,7 +67,8 @@ export default function EditInvestor({
                             <CardHeader>
                                 <CardTitle>Linked Profit Recipient</CardTitle>
                                 <CardDescription>
-                                    Read-only in Stage 3C-1.
+                                    Managed separately from this Investor
+                                    profile.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -108,10 +108,9 @@ export default function EditInvestor({
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Lifecycle</CardTitle>
+                                <CardTitle>Status</CardTitle>
                                 <CardDescription>
-                                    These actions affect only the Investor
-                                    profile.
+                                    Manage this Investor profile.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="grid gap-3">

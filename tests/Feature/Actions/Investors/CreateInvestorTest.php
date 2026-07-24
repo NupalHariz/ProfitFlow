@@ -15,13 +15,13 @@ class CreateInvestorTest extends InvestorActionTestCase
         $investor = app(CreateInvestor::class)->execute([
             'name' => '  Naufal Pratama  ',
             'email' => '  investor@example.test  ',
-            'phone' => '  +62 812 0000  ',
+            'phone' => '  +62 812-0000-1001  ',
             'is_active' => false,
         ]);
 
         $this->assertSame('Naufal Pratama', $investor->name);
         $this->assertSame('investor@example.test', $investor->email);
-        $this->assertSame('+62 812 0000', $investor->phone);
+        $this->assertSame('+6281200001001', $investor->phone);
         $this->assertFalse($investor->is_active);
         $this->assertDatabaseCount('investors', 1);
         $this->assertDatabaseCount('profit_recipients', 0);
@@ -50,6 +50,32 @@ class CreateInvestorTest extends InvestorActionTestCase
         $this->assertSame(0, ProfitRecipient::query()->count());
     }
 
+    #[DataProvider('supportedPhoneFormats')]
+    public function test_it_uses_the_shared_phone_normalization(
+        string $phone,
+        string $expected
+    ): void {
+        $investor = $this->createManagedInvestor(['phone' => $phone]);
+
+        $this->assertSame($expected, $investor->phone);
+    }
+
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function supportedPhoneFormats(): array
+    {
+        return [
+            'local mobile' => ['081234567890', '+6281234567890'],
+            'country code mobile' => ['6281234567890', '+6281234567890'],
+            'formatted international mobile' => [
+                '+62 (812) 3456-7890',
+                '+6281234567890',
+            ],
+            'local landline' => ['0215550102', '+62215550102'],
+        ];
+    }
+
     #[DataProvider('invalidInput')]
     public function test_invalid_or_unsupported_input_is_rejected(
         array $overrides
@@ -72,6 +98,12 @@ class CreateInvestorTest extends InvestorActionTestCase
             'invalid email' => [['email' => 'invalid']],
             'long email' => [['email' => str_repeat('x', 250).'@x.test']],
             'long phone' => [['phone' => str_repeat('1', 41)]],
+            'unsupported phone country' => [
+                ['phone' => '+1 555 010 1000'],
+            ],
+            'phone with letters' => [['phone' => '0812-CALL-NOW']],
+            'phone without prefix' => [['phone' => '81234567890']],
+            'phone too short' => [['phone' => '08123']],
             'non-boolean status' => [['is_active' => '1']],
             'protected field' => [['deleted_at' => now()]],
         ];

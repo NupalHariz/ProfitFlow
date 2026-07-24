@@ -36,8 +36,8 @@ export default function DeleteCustomerDialog({
                     <DialogTitle>Delete {customerName}?</DialogTitle>
                     <DialogDescription>
                         This Customer will no longer be available for new or
-                        resubmitted transaction drafts. Existing transactions
-                        remain available and keep their Customer relationship.
+                        updated transaction drafts. Existing transactions remain
+                        available and keep their Customer relationship.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -64,7 +64,7 @@ export default function DeleteCustomerDialog({
                                 >
                                     {processing
                                         ? 'Deleting…'
-                                        : 'Soft delete Customer'}
+                                        : 'Delete Customer'}
                                 </Button>
                             </DialogFooter>
                         </>

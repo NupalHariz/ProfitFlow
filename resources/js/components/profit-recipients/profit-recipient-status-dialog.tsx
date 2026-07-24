@@ -44,8 +44,8 @@ export default function ProfitRecipientStatusDialog({
                     </DialogTitle>
                     <DialogDescription>
                         {activating
-                            ? 'This changes only the Profit Recipient. A linked Investor keeps its own existing status.'
-                            : 'Deactivating this Profit Recipient affects only future eligibility. It does not remove the recipient from existing draft or published scheme versions, modify historical distributions, or change a linked Investor.'}
+                            ? 'The recipient becomes available for editable allocations. A linked Investor keeps its current status.'
+                            : 'The recipient cannot be added to editable allocations. Existing allocations and distributions remain unchanged.'}
                     </DialogDescription>
                 </DialogHeader>
 

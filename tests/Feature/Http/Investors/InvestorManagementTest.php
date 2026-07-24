@@ -17,7 +17,7 @@ class InvestorManagementTest extends InvestorHttpTestCase
             ->post(route('investors.store'), [
                 'name' => '  Naufal Pratama  ',
                 'email' => '  naufal@example.test  ',
-                'phone' => '  +62 812 0000  ',
+                'phone' => '  62 (812) 0000-1001  ',
                 'is_active' => '0',
             ]);
         $investor = Investor::query()->sole();
@@ -27,7 +27,7 @@ class InvestorManagementTest extends InvestorHttpTestCase
             ->assertRedirect(route('investors.show', $investor));
         $this->assertSame('Naufal Pratama', $investor->name);
         $this->assertSame('naufal@example.test', $investor->email);
-        $this->assertSame('+62 812 0000', $investor->phone);
+        $this->assertSame('+6281200001001', $investor->phone);
         $this->assertFalse($investor->is_active);
         $this->assertDatabaseCount('profit_recipients', 0);
     }
@@ -91,6 +91,11 @@ class InvestorManagementTest extends InvestorHttpTestCase
             'long name' => [['name' => str_repeat('x', 161)], 'name'],
             'invalid email' => [['email' => 'invalid'], 'email'],
             'long phone' => [['phone' => str_repeat('1', 41)], 'phone'],
+            'unsupported phone country' => [
+                ['phone' => '+1 555 010 1000'],
+                'phone',
+            ],
+            'phone with letters' => [['phone' => '0812-CALL-NOW'], 'phone'],
             'invalid status' => [['is_active' => 'yes'], 'is_active'],
         ];
     }
@@ -137,7 +142,7 @@ class InvestorManagementTest extends InvestorHttpTestCase
             ->patch(route('investors.update', $investor), [
                 'name' => '  Updated Investor  ',
                 'email' => ' updated@example.test ',
-                'phone' => '',
+                'phone' => '0813 4567-8901',
             ])
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('investors.show', $investor));
@@ -145,7 +150,7 @@ class InvestorManagementTest extends InvestorHttpTestCase
         $investor->refresh();
         $this->assertSame('Updated Investor', $investor->name);
         $this->assertSame('updated@example.test', $investor->email);
-        $this->assertNull($investor->phone);
+        $this->assertSame('+6281345678901', $investor->phone);
         $this->assertFalse($investor->is_active);
         $this->assertEquals(
             $recipientState,
@@ -228,7 +233,7 @@ class InvestorManagementTest extends InvestorHttpTestCase
         $investor = $this->investor([
             'name' => 'Detailed Investor',
             'email' => 'detail@example.test',
-            'phone' => '+62 812 1111',
+            'phone' => '+6281211111001',
             'is_active' => false,
         ]);
         $recipient = $this->recipient($investor, [

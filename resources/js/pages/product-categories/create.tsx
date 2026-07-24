@@ -3,13 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import ProductCategoryController from '@/actions/App/Http/Controllers/ProductCategories/ProductCategoryController';
 import ProductCategoryForm from '@/components/product-categories/product-category-form';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CreateProductCategory() {
     return (
@@ -28,18 +22,13 @@ export default function CreateProductCategory() {
                         Create product category
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Add a category used to organize product master data and
-                        match category-specific profit rules.
+                        Create a category for products and profit-sharing rules.
                     </p>
                 </div>
 
                 <Card>
                     <CardHeader>
                         <CardTitle>Category details</CardTitle>
-                        <CardDescription>
-                            The system owns the stable category slug and
-                            resolves naming collisions automatically.
-                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <ProductCategoryForm mode="create" />

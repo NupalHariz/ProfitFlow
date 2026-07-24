@@ -1,7 +1,6 @@
 import { Form } from '@inertiajs/react';
 import CustomerController from '@/actions/App/Http/Controllers/Customers/CustomerController';
 import InputError from '@/components/input-error';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,7 +65,7 @@ export default function CustomerForm({ mode, customer }: Props) {
                                 type="tel"
                                 defaultValue={customer?.phone ?? ''}
                                 maxLength={40}
-                                placeholder="+62 21 555 0101"
+                                placeholder="0812 3456 7890"
                             />
                             <InputError message={errors.phone} />
                         </div>
@@ -83,16 +82,6 @@ export default function CustomerForm({ mode, customer }: Props) {
                         />
                         <InputError message={errors.address} />
                     </div>
-
-                    <Alert>
-                        <AlertTitle>About Customer retirement</AlertTitle>
-                        <AlertDescription>
-                            Soft deletion removes this Customer from new and
-                            resubmitted transaction drafts. Existing
-                            transactions remain available and keep their live
-                            Customer relationship.
-                        </AlertDescription>
-                    </Alert>
 
                     <div className="flex justify-end">
                         <Button disabled={processing}>

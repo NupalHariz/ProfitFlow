@@ -22,6 +22,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { formatRupiah } from '@/lib/money';
+import { formatIndonesianPhoneNumber } from '@/lib/phone';
 import type {
     CustomerFormData,
     CustomerRecentTransaction,
@@ -56,8 +57,7 @@ export default function ShowCustomer({
                             {customer.name}
                         </h1>
                         <p className="mt-2 text-sm text-muted-foreground">
-                            Current Customer profile and bounded transaction
-                            history.
+                            Customer details and transaction history.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -77,10 +77,6 @@ export default function ShowCustomer({
                 <Card>
                     <CardHeader>
                         <CardTitle>Customer profile</CardTitle>
-                        <CardDescription>
-                            Transactions reference this live record; Customer
-                            fields are not immutable transaction snapshots.
-                        </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                         <ProfileValue
@@ -91,7 +87,10 @@ export default function ShowCustomer({
                         <ProfileValue
                             icon={Phone}
                             label="Phone"
-                            value={customer.phone ?? 'Not provided'}
+                            value={
+                                formatIndonesianPhoneNumber(customer.phone) ??
+                                'Not provided'
+                            }
                         />
                         <ProfileValue
                             icon={MapPin}
@@ -126,10 +125,6 @@ export default function ShowCustomer({
                     <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
                             <CardTitle>Recent transactions</CardTitle>
-                            <CardDescription>
-                                The 10 newest records by transaction date and
-                                ID, using stored totals.
-                            </CardDescription>
                         </div>
                         <Button asChild variant="outline" size="sm">
                             <Link

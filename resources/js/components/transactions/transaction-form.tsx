@@ -45,7 +45,6 @@ export default function TransactionForm({
     initialData,
     customers,
     products,
-    lookupLimit,
     submitLabel,
 }: Props) {
     const initialRows = useMemo(() => editableRows(initialData), [initialData]);
@@ -135,8 +134,8 @@ export default function TransactionForm({
                                 <div>
                                     <CardTitle>Transaction details</CardTitle>
                                     <CardDescription>
-                                        Customer and transaction date apply to
-                                        the complete draft.
+                                        Select the Customer and transaction
+                                        date.
                                     </CardDescription>
                                 </div>
                                 {dirty && (
@@ -173,8 +172,6 @@ export default function TransactionForm({
                                             </p>
                                         )}
                                         <p className="mt-1">
-                                            The existing transaction
-                                            relationship is shown for reference.
                                             Choose an available Customer before
                                             saving the draft.
                                         </p>
@@ -253,8 +250,7 @@ export default function TransactionForm({
                                     Transaction items
                                 </h2>
                                 <p className="text-sm text-muted-foreground">
-                                    Row order is preserved. Duplicate products
-                                    are allowed.
+                                    Add one or more products.
                                 </p>
                             </div>
                             <Button
@@ -294,9 +290,7 @@ export default function TransactionForm({
 
                     <div className="flex flex-col justify-between gap-3 border-t pt-5 sm:flex-row sm:items-center">
                         <p className="text-xs text-muted-foreground">
-                            Lookups are currently bounded to {lookupLimit}{' '}
-                            records. The backend recalculates every submitted
-                            value before saving.
+                            Totals are calculated when the transaction is saved.
                         </p>
                         <Button disabled={processing}>
                             {processing ? 'Saving…' : submitLabel}

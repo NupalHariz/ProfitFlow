@@ -138,7 +138,7 @@ class ProfitRecipientIndexTest extends ProfitRecipientHttpTestCase
         $investor = $this->investor([
             'name' => 'Linked Investor',
             'email' => 'linked@example.test',
-            'phone' => '+62 812 0000',
+            'phone' => '+6281200001001',
             'is_active' => false,
         ]);
         $recipient = $this->recipient($investor, [

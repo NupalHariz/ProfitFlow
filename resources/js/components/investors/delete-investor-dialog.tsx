@@ -38,8 +38,8 @@ export default function DeleteInvestorDialog({
                     <DialogTitle>Delete {investorName}?</DialogTitle>
                     <DialogDescription>
                         {hasLinkedRecipient
-                            ? 'Investors linked to a Profit Recipient cannot be deleted. Use deactivation instead. The backend will enforce this guard regardless of recipient status or financial usage.'
-                            : 'This is a soft delete. The Investor will disappear from normal management. No Profit Recipient, allocation, distribution, or financial history is changed.'}
+                            ? 'This Investor is linked to a Profit Recipient and cannot be deleted. Deactivate the Investor instead.'
+                            : 'The Investor will no longer appear in normal management. Existing financial records remain unchanged.'}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -68,7 +68,7 @@ export default function DeleteInvestorDialog({
                                         ? 'Checking…'
                                         : hasLinkedRecipient
                                           ? 'Confirm deletion check'
-                                          : 'Soft delete Investor'}
+                                          : 'Delete Investor'}
                                 </Button>
                             </DialogFooter>
                         </>

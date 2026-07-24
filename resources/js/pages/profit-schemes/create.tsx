@@ -46,8 +46,7 @@ export default function CreateProfitScheme() {
                         Create profit scheme
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Create the parent identity first, then add its first
-                        version and allocations.
+                        Create a scheme for versioned profit-sharing rules.
                     </p>
                 </div>
 
@@ -55,8 +54,7 @@ export default function CreateProfitScheme() {
                     <CardHeader>
                         <CardTitle>Scheme details</CardTitle>
                         <CardDescription>
-                            The code remains editable and is normalized to
-                            lowercase kebab-case by the server.
+                            Use a short, unique code in lowercase.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

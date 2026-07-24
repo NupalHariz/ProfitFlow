@@ -56,11 +56,11 @@ const statusLabels: Record<TransactionStatus, string> = {
 
 const statusDescriptions: Record<TransactionStatus, string> = {
     draft: 'Still editable',
-    pending_distribution: 'Waiting for worker',
-    processing_distribution: 'Worker in progress',
-    distributed: 'Ledger complete',
-    distribution_failed: 'Needs review',
-    cancelled: 'No longer active',
+    pending_distribution: 'Waiting to be processed',
+    processing_distribution: 'Distribution in progress',
+    distributed: 'Distribution completed',
+    distribution_failed: 'Action required',
+    cancelled: 'Transaction cancelled',
 };
 
 export default function Dashboard({
@@ -82,8 +82,7 @@ export default function Dashboard({
                             Dashboard
                         </h1>
                         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                            Finalized business performance, distribution
-                            activity, and transaction health at a glance.
+                            Overview of transactions, profit, and distributions.
                         </p>
                     </div>
                     <Button asChild>
@@ -104,8 +103,7 @@ export default function Dashboard({
                                 Financial overview
                             </h2>
                             <p className="mt-1 text-sm text-muted-foreground">
-                                Finalized, non-cancelled transactions and the
-                                immutable distribution ledger.
+                                Summary of finalized business activity.
                             </p>
                         </div>
                     </div>
@@ -113,7 +111,7 @@ export default function Dashboard({
                         <FinancialCard
                             label="Total revenue"
                             value={formatRupiah(financialSummary.totalRevenue)}
-                            detail="Finalized transactions"
+                            detail="From finalized transactions"
                             icon={TrendingUp}
                             tone="emerald"
                         />
@@ -122,7 +120,7 @@ export default function Dashboard({
                             value={formatRupiah(
                                 financialSummary.totalProductionCost,
                             )}
-                            detail="Finalized transactions"
+                            detail="From finalized transactions"
                             icon={TrendingDown}
                             tone="amber"
                         />
@@ -131,7 +129,7 @@ export default function Dashboard({
                             value={formatRupiah(
                                 financialSummary.totalNetProfit,
                             )}
-                            detail="May include transaction losses"
+                            detail="After production costs"
                             icon={Scale}
                             tone={
                                 financialSummary.totalNetProfit.startsWith('-')
@@ -147,7 +145,7 @@ export default function Dashboard({
                             value={formatRupiah(
                                 financialSummary.totalDistributedProfit,
                             )}
-                            detail="Immutable ledger rows"
+                            detail="Profit already distributed"
                             icon={HandCoins}
                             tone="violet"
                         />
@@ -156,15 +154,14 @@ export default function Dashboard({
                             value={financialSummary.totalTransactions.toLocaleString(
                                 'en-US',
                             )}
-                            detail="Every lifecycle status"
+                            detail="All transactions"
                             icon={ReceiptText}
                             tone="slate"
                         />
                     </div>
                     <p className="mt-3 text-xs text-muted-foreground">
-                        Net profit and distributed profit are separate measures.
-                        Loss-making items create no distributions, so the totals
-                        are not expected to match.
+                        Distributed profit may differ from net profit because
+                        only profitable items are distributed.
                     </p>
                 </section>
 
@@ -229,8 +226,7 @@ export default function Dashboard({
                             Needs attention
                         </h2>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Recent failures and the oldest transactions still
-                            waiting for the critical worker.
+                            Recent failures and pending distributions.
                         </p>
                     </div>
                     <div className="grid gap-4 xl:grid-cols-2">
@@ -311,9 +307,6 @@ function RecentTransactions({
             <CardHeader className="flex-row items-center justify-between gap-4 border-b py-5">
                 <div>
                     <CardTitle>Recent transactions</CardTitle>
-                    <CardDescription className="mt-1">
-                        Latest by transaction date
-                    </CardDescription>
                 </div>
                 <Button asChild variant="ghost" size="sm">
                     <Link href={TransactionController.index()}>
@@ -479,9 +472,6 @@ function TopRecipients({
                     </span>
                     <div>
                         <CardTitle>Top Profit Recipients</CardTitle>
-                        <CardDescription className="mt-1">
-                            Ranked by immutable distributed amount
-                        </CardDescription>
                     </div>
                 </div>
             </CardHeader>
@@ -489,7 +479,7 @@ function TopRecipients({
                 <EmptyState
                     icon={CircleDollarSign}
                     title="No distributions yet"
-                    description="Recipient rankings appear after immutable ledger rows are created."
+                    description="Recipient rankings appear after distributions are completed."
                 />
             ) : (
                 <div className="divide-y">
@@ -608,8 +598,8 @@ function PendingDistributions({
                     <div>
                         <CardTitle>Oldest pending distributions</CardTitle>
                         <CardDescription className="mt-1">
-                            These transactions may still be waiting for the
-                            critical queue worker.
+                            These transactions are still waiting for profit
+                            distribution processing.
                         </CardDescription>
                     </div>
                 </div>

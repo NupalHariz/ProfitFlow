@@ -45,8 +45,7 @@ export default function CreateProfitRecipient({
                         Create Profit Recipient
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Create a stable allocation identity for an Investor or
-                        the Company.
+                        Add a recipient for profit allocations.
                     </p>
                 </div>
 
@@ -54,8 +53,7 @@ export default function CreateProfitRecipient({
                     <CardHeader>
                         <CardTitle>Recipient details</CardTitle>
                         <CardDescription>
-                            Code must be unique and keeps its submitted letter
-                            case.
+                            The code must be unique and is case-sensitive.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>

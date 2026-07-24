@@ -23,8 +23,7 @@ export default function TransactionDistributionBreakdown({
             <CardHeader>
                 <CardTitle>Item-level profit distribution</CardTitle>
                 <CardDescription>
-                    Frozen rule versions and immutable recipient snapshots are
-                    shown independently for each transaction item.
+                    Review the applied rule and recipient amounts for each item.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -34,8 +33,8 @@ export default function TransactionDistributionBreakdown({
                             Distribution completed successfully.
                         </p>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            No item had positive distributable profit, so no
-                            ledger rows were created.
+                            No item had positive profit, so no distribution was
+                            required.
                         </p>
                     </div>
                 )}
@@ -57,7 +56,7 @@ export default function TransactionDistributionBreakdown({
                                     <p className="mt-1 font-mono text-xs text-muted-foreground">
                                         {item.product_sku_snapshot} ·{' '}
                                         {item.category_name_snapshot ??
-                                            'No category snapshot'}
+                                            'No category'}
                                     </p>
                                 </div>
                                 <div className="sm:text-right">
@@ -106,28 +105,27 @@ function FrozenRule({
         if (isDraft) {
             return (
                 <p className="mt-4 text-sm text-muted-foreground">
-                    The applicable rule version will be resolved and frozen when
-                    this draft is completed.
+                    The applied rule is selected when this draft is completed.
                 </p>
             );
         }
 
         return (
             <p className="mt-4 text-sm text-destructive">
-                A frozen rule version has not been recorded.
+                No applied rule was recorded.
             </p>
         );
     }
 
     return (
         <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-            <Badge variant="secondary">Frozen at completion</Badge>
+            <Badge variant="secondary">Applied at completion</Badge>
             <span className="font-medium">
                 {item.applied_rule.scheme.name} · Version{' '}
                 {item.applied_rule.version}
             </span>
             <span className="text-muted-foreground">
-                Resolved {nullableDateTime(item.rule_resolved_at)}
+                Applied {nullableDateTime(item.rule_resolved_at)}
             </span>
         </div>
     );
@@ -143,13 +141,13 @@ function DistributionState({
     if (item.distributions.length === 0) {
         const message =
             transaction.status === 'draft'
-                ? 'Complete the draft to freeze its applicable rule and queue distribution.'
+                ? 'Complete the draft to select its rule and start distribution.'
                 : transaction.status === 'processing_distribution'
                   ? 'Distribution is currently processing.'
                   : transaction.status === 'distribution_failed'
-                    ? 'No ledger rows were committed. Retry the frozen transaction to continue.'
+                    ? 'Distribution failed before an amount was recorded. Retry to continue.'
                     : transaction.status === 'distributed'
-                      ? 'Distribution completed without a persisted row for this positive item.'
+                      ? 'No distribution amount was recorded for this item.'
                       : transaction.status === 'cancelled'
                         ? 'This cancelled transaction will not be distributed.'
                         : 'Waiting for distribution.';
@@ -166,7 +164,7 @@ function DistributionState({
             <table className="w-full min-w-[560px] text-sm">
                 <thead className="border-b bg-muted/40 text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     <tr>
-                        <th className="px-4 py-3">Recipient snapshot</th>
+                        <th className="px-4 py-3">Profit Recipient</th>
                         <th className="px-4 py-3 text-right">Percentage</th>
                         <th className="px-4 py-3 text-right">Amount</th>
                     </tr>
@@ -192,7 +190,7 @@ function DistributionState({
                             colSpan={2}
                             className="px-4 py-3 text-right font-medium"
                         >
-                            Exact item distribution total
+                            Item distribution total
                         </td>
                         <td className="px-4 py-3 text-right font-semibold tabular-nums">
                             {formatRupiah(item.distributed_total)}

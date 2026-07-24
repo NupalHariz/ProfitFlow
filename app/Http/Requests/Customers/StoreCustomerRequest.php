@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Customers;
 
+use App\Support\IndonesianPhoneNumber;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class StoreCustomerRequest extends FormRequest
@@ -12,14 +13,19 @@ final class StoreCustomerRequest extends FormRequest
     }
 
     /**
-     * @return array<string, list<string>>
+     * @return array<string, list<IndonesianPhoneNumber|string>>
      */
     public function rules(): array
     {
         return [
             'name' => ['required', 'string', 'max:160'],
             'email' => ['nullable', 'string', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:40'],
+            'phone' => [
+                'nullable',
+                'string',
+                'max:40',
+                new IndonesianPhoneNumber,
+            ],
             'address' => ['nullable', 'string'],
             'id' => ['prohibited'],
             'deleted_at' => ['prohibited'],

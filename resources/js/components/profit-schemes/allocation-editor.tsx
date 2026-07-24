@@ -69,13 +69,17 @@ export default function AllocationEditor({
         .map((row) => row.profit_recipient_id)
         .filter(Boolean);
     const recipientLookups = [...allocationRecipients, ...recipients];
-    const hasUnavailableSelection = rows.some((row) => {
+    const unavailableSelectionCount = rows.filter((row) => {
+        if (row.profit_recipient_id === '') {
+            return false;
+        }
+
         const recipient = recipientLookups.find(
             (candidate) => candidate.id.toString() === row.profit_recipient_id,
         );
 
-        return recipient !== undefined && !recipient.is_available;
-    });
+        return recipient === undefined || !recipient.is_available;
+    }).length;
 
     function updateRow(
         key: string,
@@ -103,25 +107,33 @@ export default function AllocationEditor({
         setRows((current) => current.filter((row) => row.key !== key));
     }
 
-    const totalPresentation = {
-        ready: {
-            label: 'Ready to publish',
-            className:
-                'border-emerald-600/30 bg-emerald-500/10 text-emerald-700',
-        },
-        incomplete: {
-            label: 'Incomplete',
-            className: 'border-amber-600/30 bg-amber-500/10 text-amber-700',
-        },
-        exceeds: {
-            label: 'Exceeds 100%',
-            className: 'border-red-600/30 bg-red-500/10 text-red-700',
-        },
-        invalid: {
-            label: 'Invalid input',
-            className: 'border-red-600/30 bg-red-500/10 text-red-700',
-        },
-    }[total.state];
+    const totalPresentation =
+        unavailableSelectionCount > 0 && total.state === 'ready'
+            ? {
+                  label: 'Replacement required',
+                  className:
+                      'border-amber-600/30 bg-amber-500/10 text-amber-700',
+              }
+            : {
+                  ready: {
+                      label: 'Allocation total complete',
+                      className:
+                          'border-emerald-600/30 bg-emerald-500/10 text-emerald-700',
+                  },
+                  incomplete: {
+                      label: 'Incomplete',
+                      className:
+                          'border-amber-600/30 bg-amber-500/10 text-amber-700',
+                  },
+                  exceeds: {
+                      label: 'Exceeds 100%',
+                      className: 'border-red-600/30 bg-red-500/10 text-red-700',
+                  },
+                  invalid: {
+                      label: 'Invalid input',
+                      className: 'border-red-600/30 bg-red-500/10 text-red-700',
+                  },
+              }[total.state];
 
     return (
         <Form
@@ -152,12 +164,10 @@ export default function AllocationEditor({
                     <InputError message={errors.allocations} />
                     <InputError message={errors.version} />
 
-                    {hasUnavailableSelection && (
+                    {unavailableSelectionCount > 0 && (
                         <p className="rounded-md border border-amber-600/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
-                            This Profit Recipient is no longer available for new
-                            or edited allocations. The existing draft allocation
-                            is shown for reference. Choose an active Profit
-                            Recipient before saving the draft.
+                            Unavailable recipients must be replaced before
+                            publishing.
                         </p>
                     )}
 
@@ -207,10 +217,9 @@ export default function AllocationEditor({
                                                     </p>
                                                 )}
                                                 <p className="mt-1">
-                                                    This existing allocation is
-                                                    unchanged. Select an
-                                                    available replacement before
-                                                    saving.
+                                                    This recipient is
+                                                    unavailable. Choose a
+                                                    replacement.
                                                 </p>
                                             </div>
                                         )}
@@ -347,9 +356,8 @@ export default function AllocationEditor({
                     </div>
 
                     <p className="text-xs text-muted-foreground">
-                        Draft totals may be below or above 100.0000%. The rows
-                        are saved in the order shown; publication still requires
-                        exactly 100.0000%.
+                        You can save an incomplete draft. Publishing requires a
+                        total allocation of exactly 100%.
                     </p>
                 </>
             )}

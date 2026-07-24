@@ -3,13 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import CustomerController from '@/actions/App/Http/Controllers/Customers/CustomerController';
 import CustomerForm from '@/components/customers/customer-form';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CreateCustomer() {
     return (
@@ -28,18 +22,13 @@ export default function CreateCustomer() {
                         Create Customer
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Add the contact record used when creating transaction
-                        drafts.
+                        Add a Customer for sales transactions.
                     </p>
                 </div>
 
                 <Card>
                     <CardHeader>
                         <CardTitle>Customer details</CardTitle>
-                        <CardDescription>
-                            Only the name is required. Email addresses do not
-                            need to be unique.
-                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <CustomerForm mode="create" />

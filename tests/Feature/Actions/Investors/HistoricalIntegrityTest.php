@@ -106,7 +106,7 @@ class HistoricalIntegrityTest extends InvestorActionTestCase
         $updated = app(UpdateInvestor::class)->execute($investor, [
             'name' => 'Current Investor Name',
             'email' => 'current@example.test',
-            'phone' => '+62 811 9999',
+            'phone' => '+62 811 9999 0001',
         ]);
         $inactive = app(SetInvestorActive::class)->execute(
             $updated,
@@ -119,7 +119,7 @@ class HistoricalIntegrityTest extends InvestorActionTestCase
 
         $this->assertSame('Current Investor Name', $active->name);
         $this->assertSame('current@example.test', $active->email);
-        $this->assertSame('+62 811 9999', $active->phone);
+        $this->assertSame('+6281199990001', $active->phone);
         $this->assertTrue($active->is_active);
         $this->assertEquals(
             $storedRows['recipient'],

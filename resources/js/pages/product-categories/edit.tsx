@@ -41,8 +41,7 @@ export default function EditProductCategory({
                         />
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Rename or describe this category without changing its
-                        stable identity or product records.
+                        Update category details.
                     </p>
                 </div>
 
@@ -50,10 +49,6 @@ export default function EditProductCategory({
                     <Card>
                         <CardHeader>
                             <CardTitle>Category details</CardTitle>
-                            <CardDescription>
-                                General edits never update child products,
-                                scheme versions, or transaction snapshots.
-                            </CardDescription>
                         </CardHeader>
                         <CardContent>
                             <ProductCategoryForm
@@ -66,25 +61,9 @@ export default function EditProductCategory({
                     <div className="grid gap-6">
                         <Card>
                             <CardHeader>
-                                <CardTitle>System identifier</CardTitle>
+                                <CardTitle>Status</CardTitle>
                                 <CardDescription>
-                                    Generated at creation and stable after
-                                    renaming.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <code className="block rounded-md bg-muted px-3 py-2 text-sm break-all">
-                                    {category.slug}
-                                </code>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Lifecycle</CardTitle>
-                                <CardDescription>
-                                    Status changes are separate from general
-                                    editing. Delete remains backend-guarded.
+                                    Manage whether this category is available.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="grid gap-3">

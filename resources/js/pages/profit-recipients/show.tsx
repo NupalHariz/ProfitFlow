@@ -20,6 +20,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { formatIndonesianPhoneNumber } from '@/lib/phone';
 import type {
     ProfitRecipientData,
     ProfitRecipientInvestor,
@@ -83,11 +84,10 @@ export default function ShowProfitRecipient({
                 </div>
 
                 <Alert>
-                    <AlertTitle>Independent identities and statuses</AlertTitle>
+                    <AlertTitle>Managed separately</AlertTitle>
                     <AlertDescription>
-                        Investor and Profit Recipient statuses are independent.
-                        Recipient changes never update an Investor profile, and
-                        existing distribution name snapshots remain unchanged.
+                        Investor and Profit Recipient details are managed
+                        separately.
                     </AlertDescription>
                 </Alert>
 
@@ -125,7 +125,7 @@ export default function ShowProfitRecipient({
                             <CardDescription>
                                 {recipient.type === 'company'
                                     ? 'Not applicable to Company recipients.'
-                                    : 'Read-only business profile summary.'}
+                                    : 'Investor details.'}
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -153,7 +153,11 @@ export default function ShowProfitRecipient({
                                     <ProfileValue
                                         icon={Phone}
                                         label="Phone"
-                                        value={investor.phone ?? 'No phone'}
+                                        value={
+                                            formatIndonesianPhoneNumber(
+                                                investor.phone,
+                                            ) ?? 'No phone'
+                                        }
                                     />
                                 </div>
                             )}
@@ -164,10 +168,6 @@ export default function ShowProfitRecipient({
                 <Card>
                     <CardHeader>
                         <CardTitle>Usage summary</CardTitle>
-                        <CardDescription>
-                            Database counts only; allocation and distribution
-                            rows are not loaded into this page.
-                        </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <SummaryValue

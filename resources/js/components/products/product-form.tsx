@@ -32,12 +32,7 @@ type Props =
           categoryOptionLimit: number;
       };
 
-export default function ProductForm({
-    mode,
-    product,
-    categories,
-    categoryOptionLimit,
-}: Props) {
+export default function ProductForm({ mode, product, categories }: Props) {
     const [categoryId, setCategoryId] = useState(
         product
             ? String(product.product_category_id)
@@ -120,10 +115,6 @@ export default function ProductForm({
                                 ))}
                             </SelectContent>
                         </Select>
-                        <p className="text-xs text-muted-foreground">
-                            Up to {categoryOptionLimit} categories are loaded.
-                            The current category is always included on edit.
-                        </p>
                         <InputError message={errors.product_category_id} />
                     </div>
 
@@ -154,8 +145,7 @@ export default function ProductForm({
                                 className="font-mono"
                             />
                             <p className="text-xs text-muted-foreground">
-                                SKUs are exact and case-sensitive. Deleted
-                                product SKUs remain reserved.
+                                The SKU must be unique and is case-sensitive.
                             </p>
                             <InputError message={errors.sku} />
                         </div>
@@ -204,10 +194,8 @@ export default function ProductForm({
                     </div>
 
                     <p className="text-xs text-muted-foreground">
-                        Enter non-negative decimal values with at most two
-                        decimal places. These defaults affect only transaction
-                        drafts saved or resubmitted later; existing transaction
-                        snapshots never change.
+                        Enter non-negative values with up to two decimal places.
+                        These defaults apply to new and edited transactions.
                     </p>
 
                     <div className="grid gap-2">

@@ -3,6 +3,7 @@ import { Pencil, Plus, Search } from 'lucide-react';
 import { useState } from 'react';
 import ProductController from '@/actions/App/Http/Controllers/Products/ProductController';
 import DeleteProductDialog from '@/components/products/delete-product-dialog';
+import ProductAvailabilityBadge from '@/components/products/product-availability-badge';
 import ProductStatusBadge from '@/components/products/product-status-badge';
 import ProductStatusDialog from '@/components/products/product-status-dialog';
 import { Badge } from '@/components/ui/badge';
@@ -56,8 +57,7 @@ export default function ProductIndex({
                             Products
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Maintain product identities, category assignments,
-                            transaction defaults, and availability.
+                            Manage products, pricing defaults, and availability.
                         </p>
                     </div>
                     <Button asChild>
@@ -80,6 +80,7 @@ export default function ProductIndex({
                                     name="search"
                                     defaultValue={filters.search}
                                     placeholder="Search name or SKU"
+                                    aria-label="Search products"
                                     className="pl-9"
                                 />
                             </div>
@@ -92,7 +93,10 @@ export default function ProductIndex({
                                 value={category}
                                 onValueChange={setCategory}
                             >
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger
+                                    className="w-full"
+                                    aria-label="Filter products by category"
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -119,7 +123,10 @@ export default function ProductIndex({
                                     setStatus(value as ProductFilters['status'])
                                 }
                             >
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger
+                                    className="w-full"
+                                    aria-label="Filter products by status"
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -192,6 +199,19 @@ export default function ProductIndex({
                                                 </Badge>
                                             )}
                                         </div>
+                                        <div className="flex items-center justify-between gap-3 text-sm">
+                                            <span className="text-muted-foreground">
+                                                Transaction availability
+                                            </span>
+                                            <ProductAvailabilityBadge
+                                                productActive={
+                                                    product.is_active
+                                                }
+                                                categoryActive={
+                                                    product.category.is_active
+                                                }
+                                            />
+                                        </div>
                                         <div className="grid grid-cols-2 gap-3 text-sm">
                                             <div>
                                                 <p className="text-xs text-muted-foreground">
@@ -251,7 +271,10 @@ export default function ProductIndex({
                                                 Production cost
                                             </th>
                                             <th className="px-5 py-3">
-                                                Status
+                                                Product status
+                                            </th>
+                                            <th className="px-5 py-3">
+                                                Transaction availability
                                             </th>
                                             <th className="px-5 py-3">
                                                 Updated
@@ -312,6 +335,17 @@ export default function ProductIndex({
                                                     <ProductStatusBadge
                                                         active={
                                                             product.is_active
+                                                        }
+                                                    />
+                                                </td>
+                                                <td className="px-5 py-4">
+                                                    <ProductAvailabilityBadge
+                                                        productActive={
+                                                            product.is_active
+                                                        }
+                                                        categoryActive={
+                                                            product.category
+                                                                .is_active
                                                         }
                                                     />
                                                 </td>

@@ -88,12 +88,6 @@ export default function ProductCategoryForm({ mode, category }: Props) {
                         </div>
                     )}
 
-                    <p className="text-xs text-muted-foreground">
-                        A stable slug is generated automatically when the
-                        category is created. Renaming the category later will
-                        not change it.
-                    </p>
-
                     <div className="flex justify-end">
                         <Button disabled={processing}>
                             {processing

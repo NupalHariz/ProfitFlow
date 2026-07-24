@@ -3,7 +3,9 @@
 namespace App\Actions\Customers\Support;
 
 use App\Exceptions\Customers\InvalidCustomer;
+use App\Support\IndonesianPhoneNumber;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 final class CustomerInputNormalizer
 {
@@ -29,11 +31,7 @@ final class CustomerInputNormalizer
         return [
             'name' => $this->name($data['name']),
             'email' => $this->email($data['email'] ?? null),
-            'phone' => $this->nullableString(
-                $data['phone'] ?? null,
-                'phone',
-                40
-            ),
+            'phone' => $this->phone($data['phone'] ?? null),
             'address' => $this->nullableString(
                 $data['address'] ?? null,
                 'address'
@@ -72,6 +70,17 @@ final class CustomerInputNormalizer
         }
 
         return $email;
+    }
+
+    private function phone(mixed $value): ?string
+    {
+        try {
+            return IndonesianPhoneNumber::normalize($value);
+        } catch (InvalidArgumentException) {
+            throw new InvalidCustomer(
+                'Customer phone must be a valid Indonesian phone number.'
+            );
+        }
     }
 
     private function nullableString(

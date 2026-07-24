@@ -38,10 +38,9 @@ export default function TransactionRetryDialog({ transactionId, mode }: Props) {
                             : 'Retry this distribution?'}
                     </DialogTitle>
                     <DialogDescription>
-                        This redispatches the existing frozen transaction. It
-                        does not recalculate financial snapshots or resolve a
-                        newer rule version. Duplicate delivery is safe because
-                        database processing is idempotent.
+                        This retries distribution for the completed transaction
+                        using the same financial values and applied rules.
+                        Repeating it will not create duplicate distributions.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -68,7 +67,7 @@ export default function TransactionRetryDialog({ transactionId, mode }: Props) {
                                     {processing
                                         ? 'Queueing…'
                                         : isRedrive
-                                          ? 'Requeue frozen transaction'
+                                          ? 'Requeue distribution'
                                           : 'Queue retry'}
                                 </Button>
                             </DialogFooter>

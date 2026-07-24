@@ -25,6 +25,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { formatRupiah } from '@/lib/money';
+import { formatIndonesianPhoneNumber } from '@/lib/phone';
 import type { TransactionDetail, TransactionRecipientSummary } from '@/types';
 
 export default function ShowTransaction({
@@ -84,8 +85,7 @@ export default function ShowTransaction({
                             />
                         </div>
                         <p className="mt-2 text-sm text-muted-foreground">
-                            Stored transaction snapshots and exact financial
-                            totals.
+                            Transaction details and financial totals.
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -119,7 +119,9 @@ export default function ShowTransaction({
                                 transaction.customer.is_deleted
                                     ? 'Deleted customer record'
                                     : (transaction.customer.email ??
-                                      transaction.customer.phone ??
+                                      formatIndonesianPhoneNumber(
+                                          transaction.customer.phone,
+                                      ) ??
                                       'No contact details')
                             }
                             marker={
@@ -161,11 +163,10 @@ export default function ShowTransaction({
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Item snapshots</CardTitle>
+                        <CardTitle>Transaction items</CardTitle>
                         <CardDescription>
-                            These historical values are stored on the
-                            transaction and are not reloaded from current
-                            product master data.
+                            Product and pricing details recorded for this
+                            transaction.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -173,7 +174,7 @@ export default function ShowTransaction({
                             <table className="w-full min-w-[960px] text-sm">
                                 <thead className="border-b bg-muted/40 text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
                                     <tr>
-                                        <th className="px-4 py-3">Snapshot</th>
+                                        <th className="px-4 py-3">Product</th>
                                         <th className="px-4 py-3 text-right">
                                             Qty
                                         </th>

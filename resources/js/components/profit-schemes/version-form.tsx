@@ -53,10 +53,9 @@ export default function VersionForm({
 
                     <Card className="border-dashed bg-muted/20 shadow-none">
                         <CardContent className="text-sm text-muted-foreground">
-                            General rules leave category empty. Empty profit
-                            bounds are open-ended. Higher priority wins; equal
-                            priorities use publication time, version, then ID.
-                            New versions never rewrite historical transactions.
+                            Leave category empty to apply this rule to all
+                            categories. Profit limits are optional.
+                            Higher-priority rules are applied first.
                         </CardContent>
                     </Card>
 

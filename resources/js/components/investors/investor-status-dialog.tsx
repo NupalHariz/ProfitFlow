@@ -44,8 +44,8 @@ export default function InvestorStatusDialog({
                     </DialogTitle>
                     <DialogDescription>
                         {activating
-                            ? 'This changes only the Investor profile. A linked Profit Recipient keeps its own existing status.'
-                            : 'Deactivating this Investor changes only the Investor profile. It does not deactivate or modify a linked Profit Recipient, published allocations, or historical distributions.'}
+                            ? 'The Investor becomes active. A linked Profit Recipient keeps its current status.'
+                            : 'The Investor becomes inactive. A linked Profit Recipient and existing distributions remain unchanged.'}
                     </DialogDescription>
                 </DialogHeader>
 

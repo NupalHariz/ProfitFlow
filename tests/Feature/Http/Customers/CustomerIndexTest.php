@@ -46,7 +46,7 @@ class CustomerIndexTest extends CustomerHttpTestCase
         $target = $this->customer([
             'name' => 'Target Customer',
             'email' => 'target@example.test',
-            'phone' => '+62 812 3456 7890',
+            'phone' => '+6281234567890',
             $field => $stored,
         ]);
         $this->customer([
@@ -83,8 +83,23 @@ class CustomerIndexTest extends CustomerHttpTestCase
             ],
             'phone' => [
                 'phone',
-                '+62 877 9988 7766',
+                '+6287799887766',
                 '9988',
+            ],
+            'local phone prefix' => [
+                'phone',
+                '+6287799887766',
+                '0877',
+            ],
+            'country phone prefix' => [
+                'phone',
+                '+6287799887766',
+                '62877',
+            ],
+            'international phone prefix' => [
+                'phone',
+                '+6287799887766',
+                '+62877',
             ],
         ];
     }

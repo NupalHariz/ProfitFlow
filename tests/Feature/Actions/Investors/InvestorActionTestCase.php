@@ -38,7 +38,7 @@ abstract class InvestorActionTestCase extends TestCase
         return array_replace([
             'name' => 'Naufal Pratama',
             'email' => 'naufal@example.test',
-            'phone' => '+62 812 3456 7890',
+            'phone' => '+6281234567890',
             'is_active' => true,
         ], $overrides);
     }

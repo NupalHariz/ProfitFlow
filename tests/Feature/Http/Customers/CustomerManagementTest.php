@@ -32,7 +32,7 @@ class CustomerManagementTest extends CustomerHttpTestCase
             'finance@nusantara.test',
             $customer->email
         );
-        $this->assertSame('+62 21 555 0101', $customer->phone);
+        $this->assertSame('+62215550101', $customer->phone);
         $this->assertSame('Jakarta', $customer->address);
     }
 
@@ -156,7 +156,7 @@ class CustomerManagementTest extends CustomerHttpTestCase
             ->patch(route('customers.update', $customer), [
                 'name' => '  Updated Name  ',
                 'email' => ' updated@example.com ',
-                'phone' => '',
+                'phone' => '0812 3456-7890',
                 'address' => ' Bandung ',
             ])
             ->assertSessionHasNoErrors()
@@ -165,7 +165,7 @@ class CustomerManagementTest extends CustomerHttpTestCase
         $customer->refresh();
         $this->assertSame('Updated Name', $customer->name);
         $this->assertSame('updated@example.com', $customer->email);
-        $this->assertNull($customer->phone);
+        $this->assertSame('+6281234567890', $customer->phone);
         $this->assertSame('Bandung', $customer->address);
     }
 
@@ -216,7 +216,7 @@ class CustomerManagementTest extends CustomerHttpTestCase
         $customer = $this->customer([
             'name' => 'Detail Customer',
             'email' => 'detail@example.test',
-            'phone' => '+62 812 0000',
+            'phone' => '+6281200001001',
             'address' => 'Detailed Address',
         ]);
         $drafts = Transaction::factory()

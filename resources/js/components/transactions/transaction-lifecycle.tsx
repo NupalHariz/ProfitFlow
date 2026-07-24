@@ -25,24 +25,21 @@ const statusContent: Record<
             'The transaction remains editable until an administrator confirms completion.',
     },
     pending_distribution: {
-        title: 'Waiting for the critical queue',
-        description:
-            'Completion is final and the frozen transaction is waiting for an asynchronous distribution worker.',
+        title: 'Waiting for profit distribution',
+        description: 'The completed transaction is waiting for distribution.',
     },
     processing_distribution: {
         title: 'Profit distribution is processing',
-        description:
-            'A worker is calculating and atomically persisting distributions from the frozen rule versions.',
+        description: 'Distribution is in progress.',
     },
     distributed: {
         title: 'Distribution completed',
-        description:
-            'The immutable item-level distribution ledger is complete.',
+        description: 'Profit has been distributed.',
     },
     distribution_failed: {
         title: 'Distribution needs attention',
         description:
-            'The final queue attempt failed. Retrying will use the same financial snapshots and frozen rule versions.',
+            'Distribution failed. Retry uses the same completed transaction and applied rules.',
     },
     cancelled: {
         title: 'Transaction cancelled',
@@ -73,10 +70,9 @@ export default function TransactionLifecycle({
         <Card>
             <CardHeader className="gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <CardTitle>Transaction lifecycle</CardTitle>
+                    <CardTitle>Transaction status</CardTitle>
                     <CardDescription>
-                        Completion and distribution timestamps are recorded by
-                        the authoritative backend workflow.
+                        Review completion and distribution progress.
                     </CardDescription>
                 </div>
                 {transaction.can_retry_distribution && (

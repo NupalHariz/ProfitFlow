@@ -49,6 +49,7 @@ type VersionData = {
     is_immutable: boolean;
     can_edit: boolean;
     allocation_total: string;
+    unavailable_allocation_count: number;
     is_ready_to_publish: boolean;
     allocations: {
         id: number;
@@ -121,8 +122,8 @@ export default function ProfitSchemeShow({ scheme }: PageProps) {
                     <div>
                         <h2 className="font-semibold">Version history</h2>
                         <p className="text-sm text-muted-foreground">
-                            Newest version first. Published and historically
-                            referenced versions are read-only.
+                            Newest version first. Published or used versions
+                            cannot be edited.
                         </p>
                     </div>
                 </div>
@@ -233,9 +234,8 @@ function VersionCard({
                 {version.is_historically_referenced &&
                     !version.is_published && (
                         <p className="rounded-md border border-amber-600/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
-                            This draft is locked because a transaction item
-                            already references it. Its historical rule and
-                            allocation values cannot be changed.
+                            This version has been used by a transaction and can
+                            no longer be edited.
                         </p>
                     )}
 
@@ -317,20 +317,32 @@ function VersionCard({
                                         className="flex flex-col justify-between gap-2 px-4 py-3 sm:flex-row sm:items-center"
                                     >
                                         <div>
-                                            <p className="text-sm font-medium">
-                                                {
-                                                    allocation.recipient
-                                                        .display_name
-                                                }
-                                            </p>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="text-sm font-medium">
+                                                    {
+                                                        allocation.recipient
+                                                            .display_name
+                                                    }
+                                                </p>
+                                                {!allocation.recipient
+                                                    .is_available_for_allocation && (
+                                                    <Badge variant="outline">
+                                                        Unavailable
+                                                    </Badge>
+                                                )}
+                                            </div>
                                             <p className="font-mono text-xs text-muted-foreground">
                                                 {allocation.recipient.code} ·{' '}
                                                 {allocation.recipient.type}
-                                                {!allocation.recipient
-                                                    .is_available_for_allocation
-                                                    ? ' · unavailable for new draft allocations'
-                                                    : ''}
                                             </p>
+                                            {!allocation.recipient
+                                                .is_available_for_allocation && (
+                                                <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                                                    {version.can_edit
+                                                        ? 'Choose a replacement before publishing.'
+                                                        : 'Unavailable for new allocations.'}
+                                                </p>
+                                            )}
                                         </div>
                                         <p className="font-mono text-sm font-semibold">
                                             {allocation.percentage}%
@@ -342,19 +354,35 @@ function VersionCard({
                     )}
                 </div>
 
-                {!version.is_published &&
-                    version.can_edit &&
-                    version.allocation_total !== '100.0000' && (
-                        <p className="text-sm text-amber-700 dark:text-amber-300">
-                            Publication is unavailable until allocations total
-                            exactly 100.0000%.
+                {version.can_edit && !version.is_ready_to_publish && (
+                    <div className="rounded-md border border-amber-600/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
+                        <p className="font-medium">
+                            This version is not ready to publish.
                         </p>
-                    )}
+                        <ul className="mt-1 list-inside list-disc space-y-1">
+                            {!version.is_active && (
+                                <li>Activate the version before publishing.</li>
+                            )}
+                            {version.unavailable_allocation_count > 0 && (
+                                <li>
+                                    {version.unavailable_allocation_count}{' '}
+                                    {version.unavailable_allocation_count === 1
+                                        ? 'allocation requires'
+                                        : 'allocations require'}{' '}
+                                    replacement.
+                                </li>
+                            )}
+                            {version.allocation_total !== '100.0000' && (
+                                <li>Allocations must total exactly 100%.</li>
+                            )}
+                        </ul>
+                    </div>
+                )}
 
                 {version.is_published && (
                     <p className="flex items-center gap-2 text-xs text-muted-foreground">
                         <LockKeyhole className="size-3.5" />
-                        Published rule fields and allocations are immutable.
+                        Published versions cannot be edited.
                     </p>
                 )}
             </CardContent>

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -32,7 +33,7 @@ class RegistrationTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_guest_pages_expose_no_registration_prop_link_or_page(): void
+    public function test_login_exposes_no_registration_prop_link_or_page(): void
     {
         $this->get(route('login'))
             ->assertOk()
@@ -41,23 +42,40 @@ class RegistrationTest extends TestCase
                 ->missing('canRegister'),
             );
 
-        $this->get(route('home'))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('welcome')
-                ->missing('canRegister'),
-            );
-
         $loginSource = file_get_contents(resource_path('js/pages/auth/login.tsx'));
-        $welcomeSource = file_get_contents(resource_path('js/pages/welcome.tsx'));
 
         $this->assertIsString($loginSource);
-        $this->assertIsString($welcomeSource);
         $this->assertStringNotContainsString('register()', $loginSource);
         $this->assertStringNotContainsString('Sign up', $loginSource);
-        $this->assertStringNotContainsString('register()', $welcomeSource);
-        $this->assertStringNotContainsString('>Register<', $welcomeSource);
         $this->assertFileDoesNotExist(resource_path('js/pages/auth/register.tsx'));
+        $this->assertFileDoesNotExist(resource_path('js/pages/welcome.tsx'));
+    }
+
+    public function test_root_redirects_guests_to_login_and_users_to_dashboard(): void
+    {
+        $this->get(route('home'))
+            ->assertRedirect(route('login', absolute: false));
+
+        $user = User::factory()->create([
+            'email_verified_at' => now(),
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_root_does_not_bypass_email_verification(): void
+    {
+        $user = User::factory()->unverified()->create();
+
+        $this->actingAs($user)
+            ->get(route('home'))
+            ->assertRedirect(route('dashboard', absolute: false));
+
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertRedirect(route('verification.notice', absolute: false));
     }
 
     public function test_required_self_service_authentication_routes_remain_available(): void

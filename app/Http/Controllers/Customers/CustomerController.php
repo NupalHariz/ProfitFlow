@@ -13,6 +13,7 @@ use App\Http\Requests\Customers\StoreCustomerRequest;
 use App\Http\Requests\Customers\UpdateCustomerRequest;
 use App\Models\Customer;
 use App\Models\Transaction;
+use App\Support\IndonesianPhoneNumber;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -41,12 +42,26 @@ final class CustomerController extends Controller
 
         if ($filters['search'] !== '') {
             $search = '%'.$filters['search'].'%';
+            $phoneSearch = IndonesianPhoneNumber::normalizeSearchPrefix(
+                $filters['search']
+            );
 
-            $query->where(function (Builder $query) use ($search): void {
+            $query->where(function (Builder $query) use (
+                $phoneSearch,
+                $search
+            ): void {
                 $query
                     ->where('name', 'ilike', $search)
                     ->orWhere('email', 'ilike', $search)
                     ->orWhere('phone', 'ilike', $search);
+
+                if ($phoneSearch !== null) {
+                    $query->orWhere(
+                        'phone',
+                        'ilike',
+                        '%'.$phoneSearch.'%'
+                    );
+                }
             });
         }
 

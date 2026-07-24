@@ -40,8 +40,7 @@ export default function EditProfitRecipient({
                         Edit Profit Recipient
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Edit the current code and display name without
-                        repurposing the allocation identity.
+                        Update code and display name.
                     </p>
                 </div>
 
@@ -50,8 +49,8 @@ export default function EditProfitRecipient({
                         <CardHeader>
                             <CardTitle>Recipient profile</CardTitle>
                             <CardDescription>
-                                Type, Investor linkage, and status are excluded
-                                from this form.
+                                Recipient type and linked Investor cannot be
+                                changed.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -65,10 +64,10 @@ export default function EditProfitRecipient({
 
                     <Card>
                         <CardHeader>
-                            <CardTitle>Lifecycle</CardTitle>
+                            <CardTitle>Status</CardTitle>
                             <CardDescription>
-                                Retirement uses deactivation. Profit Recipients
-                                are never deleted.
+                                Manage whether this recipient can be used in new
+                                allocations.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>

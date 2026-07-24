@@ -15,6 +15,7 @@ use App\Http\Requests\Investors\UpdateInvestorRequest;
 use App\Http\Requests\Investors\UpdateInvestorStatusRequest;
 use App\Models\Investor;
 use App\Models\ProfitRecipient;
+use App\Support\IndonesianPhoneNumber;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\ValidationException;
@@ -49,12 +50,26 @@ final class InvestorController extends Controller
 
         if ($filters['search'] !== '') {
             $search = '%'.$filters['search'].'%';
+            $phoneSearch = IndonesianPhoneNumber::normalizeSearchPrefix(
+                $filters['search']
+            );
 
-            $query->where(function (Builder $query) use ($search): void {
+            $query->where(function (Builder $query) use (
+                $phoneSearch,
+                $search
+            ): void {
                 $query
                     ->where('name', 'ilike', $search)
                     ->orWhere('email', 'ilike', $search)
                     ->orWhere('phone', 'ilike', $search);
+
+                if ($phoneSearch !== null) {
+                    $query->orWhere(
+                        'phone',
+                        'ilike',
+                        '%'.$phoneSearch.'%'
+                    );
+                }
             });
         }
 

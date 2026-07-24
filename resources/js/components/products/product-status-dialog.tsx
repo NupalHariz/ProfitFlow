@@ -48,8 +48,8 @@ export default function ProductStatusDialog({
                     </DialogTitle>
                     <DialogDescription>
                         {activating
-                            ? 'The product can be selected for new or resubmitted transaction drafts when its current category is also active.'
-                            : 'The product becomes unavailable to new or resubmitted transaction drafts. Existing transaction snapshots and completed financial history remain unchanged.'}
+                            ? 'The product can be selected for draft transactions when its category is also active.'
+                            : 'The product cannot be selected for new or updated draft transactions. Existing completed transactions remain unchanged.'}
                     </DialogDescription>
                 </DialogHeader>
 

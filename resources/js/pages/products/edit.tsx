@@ -2,6 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { ArrowLeft, TriangleAlert } from 'lucide-react';
 import ProductController from '@/actions/App/Http/Controllers/Products/ProductController';
 import DeleteProductDialog from '@/components/products/delete-product-dialog';
+import ProductAvailabilityBadge from '@/components/products/product-availability-badge';
 import ProductForm from '@/components/products/product-form';
 import ProductStatusBadge from '@/components/products/product-status-badge';
 import ProductStatusDialog from '@/components/products/product-status-dialog';
@@ -58,13 +59,13 @@ export default function EditProduct({
                     <Alert>
                         <TriangleAlert />
                         <AlertTitle>
-                            This product is effectively unavailable
+                            Unavailable for transaction drafts
                         </AlertTitle>
                         <AlertDescription>
                             Its own status is preserved, but an inactive
-                            category excludes it from new or resubmitted
-                            transaction drafts. General edits may keep this
-                            category unchanged.
+                            category excludes it from new or updated transaction
+                            drafts. Other edits may keep this category
+                            unchanged.
                         </AlertDescription>
                     </Alert>
                 )}
@@ -74,8 +75,7 @@ export default function EditProduct({
                         <CardHeader>
                             <CardTitle>Product details</CardTitle>
                             <CardDescription>
-                                Changes affect product master data only.
-                                Historical transaction snapshots are immutable.
+                                Update product information and default pricing.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -93,34 +93,46 @@ export default function EditProduct({
                             <CardHeader>
                                 <CardTitle>Current category</CardTitle>
                                 <CardDescription>
-                                    Product and category statuses jointly
-                                    determine transaction availability.
+                                    The product is available only when both
+                                    statuses are active.
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="flex items-center justify-between gap-3">
-                                <span className="font-medium">
-                                    {product.category.name}
-                                </span>
-                                <Badge
-                                    variant={
-                                        product.category.is_active
-                                            ? 'default'
-                                            : 'secondary'
-                                    }
-                                >
-                                    {product.category.is_active
-                                        ? 'Active'
-                                        : 'Inactive'}
-                                </Badge>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between gap-3">
+                                    <span className="font-medium">
+                                        {product.category.name}
+                                    </span>
+                                    <Badge
+                                        variant={
+                                            product.category.is_active
+                                                ? 'default'
+                                                : 'secondary'
+                                        }
+                                    >
+                                        {product.category.is_active
+                                            ? 'Active'
+                                            : 'Inactive'}
+                                    </Badge>
+                                </div>
+                                <div className="flex items-center justify-between gap-3 border-t pt-4">
+                                    <span className="text-sm text-muted-foreground">
+                                        Transaction availability
+                                    </span>
+                                    <ProductAvailabilityBadge
+                                        productActive={product.is_active}
+                                        categoryActive={
+                                            product.category.is_active
+                                        }
+                                    />
+                                </div>
                             </CardContent>
                         </Card>
 
                         <Card>
                             <CardHeader>
-                                <CardTitle>Lifecycle</CardTitle>
+                                <CardTitle>Status</CardTitle>
                                 <CardDescription>
-                                    Status and deletion are deliberate actions,
-                                    separate from general editing.
+                                    Manage whether this product is available.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="grid gap-3">

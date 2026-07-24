@@ -41,7 +41,7 @@ abstract class CustomerHttpTestCase extends TestCase
         return array_replace([
             'name' => 'PT Nusantara Retail',
             'email' => 'finance@nusantara.test',
-            'phone' => '+62 21 555 0101',
+            'phone' => '+62215550101',
             'address' => 'Jakarta',
         ], $overrides);
     }

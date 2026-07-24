@@ -3,13 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import InvestorController from '@/actions/App/Http/Controllers/Investors/InvestorController';
 import InvestorForm from '@/components/investors/investor-form';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CreateInvestor() {
     return (
@@ -28,18 +22,13 @@ export default function CreateInvestor() {
                         Create Investor
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Add an Investor business profile without changing
-                        allocation identities.
+                        Add an Investor profile.
                     </p>
                 </div>
 
                 <Card>
                     <CardHeader>
                         <CardTitle>Investor details</CardTitle>
-                        <CardDescription>
-                            Email and phone are optional, and email addresses do
-                            not need to be unique.
-                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <InvestorForm mode="create" />

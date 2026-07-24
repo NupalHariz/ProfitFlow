@@ -98,8 +98,7 @@ export default function TransactionIndex({
                             Transactions
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Create draft sales and review their stored financial
-                            snapshots.
+                            Create and review sales transactions.
                         </p>
                     </div>
                     <Button asChild>
@@ -122,6 +121,7 @@ export default function TransactionIndex({
                                     name="search"
                                     defaultValue={filters.search}
                                     placeholder="Number or customer"
+                                    aria-label="Search transactions"
                                     className="pl-9"
                                 />
                             </div>
@@ -138,7 +138,10 @@ export default function TransactionIndex({
                                     )
                                 }
                             >
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger
+                                    className="w-full"
+                                    aria-label="Filter transactions by status"
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -184,7 +187,10 @@ export default function TransactionIndex({
                                 value={customerId}
                                 onValueChange={setCustomerId}
                             >
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger
+                                    className="w-full"
+                                    aria-label="Filter transactions by customer"
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>

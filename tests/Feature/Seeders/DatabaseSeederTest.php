@@ -47,6 +47,30 @@ class DatabaseSeederTest extends TestCase
             'Bima Santoso',
             'Citra Lestari',
         ], Investor::query()->orderBy('name')->pluck('name')->all());
+        $this->assertSame([
+            '+62215550101',
+            '+62225550102',
+            '+622745550104',
+        ], Customer::query()
+            ->whereNotNull('phone')
+            ->orderBy('phone')
+            ->pluck('phone')
+            ->all());
+        $this->assertSame([
+            '+6281200001001',
+            '+6281200001002',
+            '+6281200001003',
+        ], Investor::query()->orderBy('phone')->pluck('phone')->all());
+
+        foreach ([
+            ...Customer::query()->whereNotNull('phone')->pluck('phone'),
+            ...Investor::query()->whereNotNull('phone')->pluck('phone'),
+        ] as $phone) {
+            $this->assertMatchesRegularExpression(
+                '/^\+62[1-9][0-9]{7,12}$/',
+                $phone
+            );
+        }
 
         foreach ($this->expectedProducts() as $sku => $expected) {
             $product = Product::query()->where('sku', $sku)->sole();

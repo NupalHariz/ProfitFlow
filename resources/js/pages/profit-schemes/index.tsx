@@ -72,8 +72,7 @@ export default function ProfitSchemeIndex({ filters, schemes }: PageProps) {
                             Profit schemes
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Configure versioned profit-sharing rules without
-                            changing historical transactions.
+                            Manage versioned profit-sharing rules.
                         </p>
                     </div>
                     <Button asChild>
@@ -96,6 +95,7 @@ export default function ProfitSchemeIndex({ filters, schemes }: PageProps) {
                                     name="search"
                                     defaultValue={filters.search}
                                     placeholder="Search by name or code"
+                                    aria-label="Search profit schemes"
                                     className="pl-9"
                                 />
                             </div>
@@ -108,7 +108,10 @@ export default function ProfitSchemeIndex({ filters, schemes }: PageProps) {
                                     )
                                 }
                             >
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger
+                                    className="w-full"
+                                    aria-label="Filter profit schemes by status"
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>

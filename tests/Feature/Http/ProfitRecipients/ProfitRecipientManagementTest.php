@@ -486,7 +486,7 @@ class ProfitRecipientManagementTest extends ProfitRecipientHttpTestCase
         $investor = $this->investor([
             'name' => 'Detail Investor',
             'email' => 'detail@example.test',
-            'phone' => '+62 811 0000',
+            'phone' => '+6281100001001',
             'is_active' => false,
         ]);
         $recipient = $this->recipient($investor, [

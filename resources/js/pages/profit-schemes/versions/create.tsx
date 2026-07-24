@@ -40,8 +40,7 @@ export default function CreateProfitSchemeVersion({
                         Create draft version
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Define the rule first. You will configure ordered
-                        allocations on the next screen before publishing.
+                        Define the rule, then configure its allocations.
                     </p>
                 </div>
 

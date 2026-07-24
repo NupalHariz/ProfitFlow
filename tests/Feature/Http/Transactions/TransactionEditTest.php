@@ -286,7 +286,7 @@ class TransactionEditTest extends TransactionHttpTestCase
         $customer = Customer::factory()->create([
             'name' => 'Retired Customer',
             'email' => 'retired@example.test',
-            'phone' => '+62 812 5555',
+            'phone' => '+6281255551001',
         ]);
         $available = Customer::factory()->create([
             'name' => 'Available Customer',

@@ -3,13 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import ProductController from '@/actions/App/Http/Controllers/Products/ProductController';
 import ProductForm from '@/components/products/product-form';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { ProductCategoryOption } from '@/types';
 
 type PageProps = {
@@ -37,18 +31,13 @@ export default function CreateProduct({
                         Create product
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        Add product master data and defaults used when a future
-                        transaction draft is saved.
+                        Add a product and its default pricing.
                     </p>
                 </div>
 
                 <Card>
                     <CardHeader>
                         <CardTitle>Product details</CardTitle>
-                        <CardDescription>
-                            Creation always requires an active category, even
-                            when the new product starts inactive.
-                        </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <ProductForm

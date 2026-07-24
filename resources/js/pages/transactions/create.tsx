@@ -49,9 +49,7 @@ export default function CreateTransaction({
                         Create draft transaction
                     </h1>
                     <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-                        Build an ordered multi-item draft. Product identity,
-                        trusted costs, and exact financial totals are
-                        snapshotted when you save.
+                        Add the Customer, date, and items for this transaction.
                     </p>
                 </div>
 

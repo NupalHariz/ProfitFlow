@@ -18,7 +18,7 @@ class InvestorFactory extends Factory
         return [
             'name' => $this->faker->unique()->name(),
             'email' => $this->faker->optional()->safeEmail(),
-            'phone' => $this->faker->optional()->numerify('+62 8## #### ####'),
+            'phone' => $this->faker->optional()->numerify('+628##########'),
             'is_active' => true,
         ];
     }

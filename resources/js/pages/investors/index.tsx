@@ -15,6 +15,7 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { formatIndonesianPhoneNumber } from '@/lib/phone';
 import {
     Select,
     SelectContent,
@@ -47,8 +48,8 @@ export default function InvestorIndex({ filters, investors }: PageProps) {
                             Investors
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Maintain Investor profiles independently from Profit
-                            Recipient allocation identities.
+                            Manage Investor profiles and linked Profit
+                            Recipients.
                         </p>
                     </div>
                     <Button asChild>
@@ -71,6 +72,7 @@ export default function InvestorIndex({ filters, investors }: PageProps) {
                                     name="search"
                                     defaultValue={filters.search}
                                     placeholder="Search name, email, or phone"
+                                    aria-label="Search investors"
                                     className="pl-9"
                                 />
                             </div>
@@ -83,7 +85,10 @@ export default function InvestorIndex({ filters, investors }: PageProps) {
                                     )
                                 }
                             >
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger
+                                    className="w-full"
+                                    aria-label="Filter investors by status"
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -114,7 +119,7 @@ export default function InvestorIndex({ filters, investors }: PageProps) {
                 {investors.data.length === 0 ? (
                     <Card className="border-dashed">
                         <CardHeader className="items-center py-12 text-center">
-                            <CardTitle>No Investors found</CardTitle>
+                            <CardTitle>No investors found</CardTitle>
                             <CardDescription>
                                 Adjust the filters or create the first Investor.
                             </CardDescription>
@@ -200,8 +205,9 @@ export default function InvestorIndex({ filters, investors }: PageProps) {
                                                             'No email'}
                                                     </p>
                                                     <p className="mt-1 text-xs text-muted-foreground">
-                                                        {investor.phone ??
-                                                            'No phone'}
+                                                        {formatIndonesianPhoneNumber(
+                                                            investor.phone,
+                                                        ) ?? 'No phone'}
                                                     </p>
                                                 </td>
                                                 <td className="px-5 py-4">
@@ -346,7 +352,11 @@ function Pagination({ investors }: { investors: InvestorPagination }) {
 }
 
 function contactSummary(investor: InvestorSummary): string {
-    return investor.email ?? investor.phone ?? 'No contact details';
+    return (
+        investor.email ??
+        formatIndonesianPhoneNumber(investor.phone) ??
+        'No contact details'
+    );
 }
 
 function formatDate(value: string | null): string {

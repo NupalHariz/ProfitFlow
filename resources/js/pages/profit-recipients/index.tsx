@@ -50,8 +50,7 @@ export default function ProfitRecipientIndex({
                             Profit Recipients
                         </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Manage the allocation identities referenced by
-                            profit schemes and distributions.
+                            Manage recipients used in profit allocations.
                         </p>
                     </div>
                     <Button asChild>
@@ -73,7 +72,8 @@ export default function ProfitRecipientIndex({
                                 <Input
                                     name="search"
                                     defaultValue={filters.search}
-                                    placeholder="Search code, name, or Investor"
+                                    placeholder="Search code, name, or investor"
+                                    aria-label="Search profit recipients"
                                     className="pl-9"
                                 />
                             </div>
@@ -86,7 +86,10 @@ export default function ProfitRecipientIndex({
                                     )
                                 }
                             >
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger
+                                    className="w-full"
+                                    aria-label="Filter profit recipients by type"
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -110,7 +113,10 @@ export default function ProfitRecipientIndex({
                                     )
                                 }
                             >
-                                <SelectTrigger className="w-full">
+                                <SelectTrigger
+                                    className="w-full"
+                                    aria-label="Filter profit recipients by status"
+                                >
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -144,10 +150,10 @@ export default function ProfitRecipientIndex({
                 {recipients.data.length === 0 ? (
                     <Card className="border-dashed">
                         <CardHeader className="items-center py-12 text-center">
-                            <CardTitle>No Profit Recipients found</CardTitle>
+                            <CardTitle>No profit recipients found</CardTitle>
                             <CardDescription>
                                 Adjust the filters or create the first
-                                allocation identity.
+                                recipient.
                             </CardDescription>
                             <Button asChild className="mt-3">
                                 <Link href={ProfitRecipientController.create()}>

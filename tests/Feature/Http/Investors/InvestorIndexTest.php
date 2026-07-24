@@ -45,7 +45,7 @@ class InvestorIndexTest extends InvestorHttpTestCase
         $target = $this->investor([
             'name' => 'Target Investor',
             'email' => 'target@example.test',
-            'phone' => '+62 812 3456',
+            'phone' => '+6281234567890',
             $field => $stored,
         ]);
         $this->investor([
@@ -76,7 +76,14 @@ class InvestorIndexTest extends InvestorHttpTestCase
                 'Capital@Example.test',
                 'cApItAl@',
             ],
-            'phone' => ['phone', '+62 877 9988 7766', '9988'],
+            'phone' => ['phone', '+6287799887766', '9988'],
+            'local phone prefix' => ['phone', '+6287799887766', '0877'],
+            'country phone prefix' => ['phone', '+6287799887766', '62877'],
+            'international phone prefix' => [
+                'phone',
+                '+6287799887766',
+                '+62877',
+            ],
         ];
     }
 

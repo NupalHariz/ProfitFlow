@@ -28,8 +28,7 @@ export default function TransactionRecipientSummaryCard({
             <CardHeader>
                 <CardTitle>Recipient summary</CardTitle>
                 <CardDescription>
-                    PostgreSQL totals grouped from immutable distribution ledger
-                    rows across all profitable items.
+                    Distributed amounts across all profitable items.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
@@ -42,7 +41,7 @@ export default function TransactionRecipientSummaryCard({
                     <Total
                         label="Distributed Profit"
                         value={distributedTotal}
-                        detail="Sum of positive item distributions from the immutable ledger."
+                        detail="Profit already distributed."
                     />
                 </div>
 
@@ -52,7 +51,7 @@ export default function TransactionRecipientSummaryCard({
                             <thead className="border-b bg-muted/40 text-left text-xs font-medium tracking-wide text-muted-foreground uppercase">
                                 <tr>
                                     <th className="px-4 py-3">
-                                        Recipient snapshot
+                                        Profit Recipient
                                     </th>
                                     <th className="px-4 py-3 text-right">
                                         Contributing items

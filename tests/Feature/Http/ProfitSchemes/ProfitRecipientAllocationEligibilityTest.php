@@ -235,6 +235,57 @@ class ProfitRecipientAllocationEligibilityTest extends ProfitSchemeHttpTestCase
         $this->assertNull($version->fresh()?->published_at);
     }
 
+    public function test_exact_total_with_an_unavailable_recipient_is_not_presented_as_publish_ready(): void
+    {
+        $user = $this->user();
+        $scheme = $this->scheme($user);
+        $version = $this->draft($scheme, $user);
+        $recipient = $this->recipient();
+        $this->allocations($version, [[
+            'profit_recipient_id' => $recipient->id,
+            'percentage' => '100.0000',
+        ]]);
+        app(SetProfitRecipientActive::class)->execute(
+            $recipient,
+            ['is_active' => false]
+        );
+
+        foreach ([
+            route('profit-schemes.versions.edit', [
+                'scheme' => $scheme,
+                'version' => $version,
+            ]) => 'version',
+            route('profit-schemes.show', $scheme) => 'scheme.versions.0',
+        ] as $url => $versionPath) {
+            $this->actingAs($user)
+                ->get($url)
+                ->assertInertia(
+                    fn (Assert $page) => $page
+                        ->where(
+                            "{$versionPath}.allocation_total",
+                            '100.0000'
+                        )
+                        ->where(
+                            "{$versionPath}.unavailable_allocation_count",
+                            1
+                        )
+                        ->where(
+                            "{$versionPath}.is_ready_to_publish",
+                            false
+                        )
+                );
+        }
+
+        $this->actingAs($user)
+            ->post(route('profit-schemes.versions.publish', [
+                'scheme' => $scheme,
+                'version' => $version,
+            ]))
+            ->assertSessionHasErrors('allocations');
+
+        $this->assertNull($version->fresh()?->published_at);
+    }
+
     public function test_reactivated_recipient_reappears_without_automatic_allocation_changes(): void
     {
         $user = $this->user();

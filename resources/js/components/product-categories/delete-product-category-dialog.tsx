@@ -35,12 +35,10 @@ export default function DeleteProductCategoryDialog({
                 <DialogHeader>
                     <DialogTitle>Delete {categoryName}?</DialogTitle>
                     <DialogDescription>
-                        This is a soft delete. The category will disappear from
-                        normal master-data selection. Deletion is blocked while
-                        any non-deleted product or profit-sharing version
-                        references it; deactivate the category instead when
-                        deletion is not allowed. Historical transactions are not
-                        deleted.
+                        The category will no longer be available for new
+                        products or profit-sharing rules. It cannot be deleted
+                        while products or scheme versions still use it. Existing
+                        transactions remain unchanged.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -67,7 +65,7 @@ export default function DeleteProductCategoryDialog({
                                 >
                                     {processing
                                         ? 'Deleting…'
-                                        : 'Soft delete category'}
+                                        : 'Delete category'}
                                 </Button>
                             </DialogFooter>
                         </>

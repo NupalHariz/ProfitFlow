@@ -48,5 +48,7 @@ export type ProfitSchemeVersionFormData = {
     is_immutable: boolean;
     can_edit: boolean;
     allocation_total: string;
+    unavailable_allocation_count: number;
+    is_ready_to_publish: boolean;
     allocations: ProfitSchemeAllocation[];
 };

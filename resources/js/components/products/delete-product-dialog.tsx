@@ -32,12 +32,10 @@ export default function DeleteProductDialog({ productId, productName }: Props) {
                 <DialogHeader>
                     <DialogTitle>Delete {productName}?</DialogTitle>
                     <DialogDescription>
-                        This is a soft delete. The product will disappear from
-                        master-data and transaction selection, but historical
-                        transaction items, snapshots, rules, distributions, and
-                        totals remain unchanged. A draft that already references
-                        it must select an available replacement when
-                        resubmitted.
+                        The product will no longer be available for new or
+                        updated draft transactions. Existing completed
+                        transactions and distributions remain unchanged. Drafts
+                        using it must choose another product before saving.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -64,7 +62,7 @@ export default function DeleteProductDialog({ productId, productName }: Props) {
                                 >
                                     {processing
                                         ? 'Deleting…'
-                                        : 'Soft delete product'}
+                                        : 'Delete product'}
                                 </Button>
                             </DialogFooter>
                         </>
