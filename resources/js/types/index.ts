@@ -4,6 +4,7 @@ export type * from './investors';
 export type * from './navigation';
 export type * from './product-categories';
 export type * from './products';
+export type * from './profit-recipients';
 export type * from './profit-schemes';
 export type * from './transactions';
 export type * from './ui';

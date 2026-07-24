@@ -4,6 +4,7 @@ use App\Http\Controllers\Customers\CustomerController;
 use App\Http\Controllers\Investors\InvestorController;
 use App\Http\Controllers\ProductCategories\ProductCategoryController;
 use App\Http\Controllers\Products\ProductController;
+use App\Http\Controllers\ProfitRecipients\ProfitRecipientController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemeAllocationController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemeController;
 use App\Http\Controllers\ProfitSchemes\ProfitSchemePublicationController;
@@ -122,6 +123,35 @@ Route::middleware(['auth', 'verified'])->group(function () {
             )->name('destroy');
             Route::get('{investor}', [InvestorController::class, 'show'])
                 ->name('show');
+        });
+
+    Route::prefix('profit-recipients')
+        ->name('profit-recipients.')
+        ->group(function (): void {
+            Route::get('/', [ProfitRecipientController::class, 'index'])
+                ->name('index');
+            Route::get(
+                'create',
+                [ProfitRecipientController::class, 'create']
+            )->name('create');
+            Route::post('/', [ProfitRecipientController::class, 'store'])
+                ->name('store');
+            Route::get(
+                '{profitRecipient}/edit',
+                [ProfitRecipientController::class, 'edit']
+            )->name('edit');
+            Route::patch(
+                '{profitRecipient}/status',
+                [ProfitRecipientController::class, 'updateStatus']
+            )->name('update-status');
+            Route::patch(
+                '{profitRecipient}',
+                [ProfitRecipientController::class, 'update']
+            )->name('update');
+            Route::get(
+                '{profitRecipient}',
+                [ProfitRecipientController::class, 'show']
+            )->name('show');
         });
 
     Route::scopeBindings()

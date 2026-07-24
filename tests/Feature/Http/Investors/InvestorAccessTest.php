@@ -83,13 +83,11 @@ class InvestorAccessTest extends InvestorHttpTestCase
         }
     }
 
-    public function test_restore_force_delete_and_recipient_routes_do_not_exist(): void
+    public function test_restore_and_force_delete_routes_do_not_exist(): void
     {
         $this->assertFalse(Route::has('investors.restore'));
         $this->assertFalse(Route::has('investors.force-destroy'));
         $this->assertFalse(Route::has('investors.force-delete'));
-        $this->assertFalse(Route::has('profit-recipients.index'));
-        $this->assertFalse(Route::has('profit-recipients.store'));
     }
 
     /**

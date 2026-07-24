@@ -1,6 +1,7 @@
 import { Link } from '@inertiajs/react';
 import {
     BookOpen,
+    CircleDollarSign,
     FolderGit2,
     HandCoins,
     LayoutGrid,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 import CustomerController from '@/actions/App/Http/Controllers/Customers/CustomerController';
 import InvestorController from '@/actions/App/Http/Controllers/Investors/InvestorController';
+import ProfitRecipientController from '@/actions/App/Http/Controllers/ProfitRecipients/ProfitRecipientController';
 import ProductCategoryController from '@/actions/App/Http/Controllers/ProductCategories/ProductCategoryController';
 import ProductController from '@/actions/App/Http/Controllers/Products/ProductController';
 import ProfitSchemeController from '@/actions/App/Http/Controllers/ProfitSchemes/ProfitSchemeController';
@@ -57,6 +59,11 @@ const mainNavItems: NavItem[] = [
         title: 'Investors',
         href: InvestorController.index(),
         icon: HandCoins,
+    },
+    {
+        title: 'Profit Recipients',
+        href: ProfitRecipientController.index(),
+        icon: CircleDollarSign,
     },
     {
         title: 'Profit Schemes',
