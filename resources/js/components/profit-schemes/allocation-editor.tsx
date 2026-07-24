@@ -27,6 +27,7 @@ type Props = {
     method: 'post';
     allocations: ProfitSchemeAllocation[];
     recipients: ProfitRecipientLookup[];
+    allocationRecipients: ProfitRecipientLookup[];
 };
 
 let rowSequence = 0;
@@ -42,6 +43,7 @@ export default function AllocationEditor({
     method,
     allocations,
     recipients,
+    allocationRecipients,
 }: Props) {
     const [rows, setRows] = useState<AllocationRow[]>(() =>
         allocations.length > 0
@@ -66,12 +68,13 @@ export default function AllocationEditor({
     const selectedRecipientIds = rows
         .map((row) => row.profit_recipient_id)
         .filter(Boolean);
-    const hasInactiveSelection = rows.some((row) => {
-        const recipient = recipients.find(
+    const recipientLookups = [...allocationRecipients, ...recipients];
+    const hasUnavailableSelection = rows.some((row) => {
+        const recipient = recipientLookups.find(
             (candidate) => candidate.id.toString() === row.profit_recipient_id,
         );
 
-        return recipient !== undefined && !recipient.is_active;
+        return recipient !== undefined && !recipient.is_available;
     });
 
     function updateRow(
@@ -149,133 +152,184 @@ export default function AllocationEditor({
                     <InputError message={errors.allocations} />
                     <InputError message={errors.version} />
 
-                    {hasInactiveSelection && (
+                    {hasUnavailableSelection && (
                         <p className="rounded-md border border-amber-600/30 bg-amber-500/10 p-3 text-sm text-amber-800 dark:text-amber-300">
-                            An existing allocation uses an inactive recipient.
-                            Replace that recipient before saving.
+                            This Profit Recipient is no longer available for new
+                            or edited allocations. The existing draft allocation
+                            is shown for reference. Choose an active Profit
+                            Recipient before saving the draft.
                         </p>
                     )}
 
                     <div className="space-y-3">
-                        {rows.map((row, index) => (
-                            <div
-                                key={row.key}
-                                className="grid gap-3 rounded-lg border p-4 md:grid-cols-[auto_minmax(0,1fr)_minmax(10rem,0.35fr)_auto] md:items-end"
-                            >
-                                <GripVertical className="hidden size-5 self-center text-muted-foreground md:block" />
-                                <div className="grid gap-2">
-                                    <Label
-                                        htmlFor={`allocation-recipient-${row.key}`}
-                                    >
-                                        Recipient {index + 1}
-                                    </Label>
-                                    <input
-                                        type="hidden"
-                                        name={`allocations[${index}][profit_recipient_id]`}
-                                        value={row.profit_recipient_id}
-                                    />
-                                    <Select
-                                        value={
-                                            row.profit_recipient_id || undefined
-                                        }
-                                        onValueChange={(value) =>
-                                            updateRow(row.key, {
-                                                profit_recipient_id: value,
-                                            })
-                                        }
-                                    >
-                                        <SelectTrigger
-                                            id={`allocation-recipient-${row.key}`}
-                                            className="w-full"
+                        {rows.map((row, index) => {
+                            const currentRecipient = recipientLookups.find(
+                                (candidate) =>
+                                    candidate.id.toString() ===
+                                    row.profit_recipient_id,
+                            );
+                            const unavailableRecipient =
+                                currentRecipient !== undefined &&
+                                !currentRecipient.is_available
+                                    ? currentRecipient
+                                    : undefined;
+
+                            return (
+                                <div
+                                    key={row.key}
+                                    className="grid gap-3 rounded-lg border p-4 md:grid-cols-[auto_minmax(0,1fr)_minmax(10rem,0.35fr)_auto] md:items-end"
+                                >
+                                    <GripVertical className="hidden size-5 self-center text-muted-foreground md:block" />
+                                    <div className="grid gap-2">
+                                        <Label
+                                            htmlFor={`allocation-recipient-${row.key}`}
                                         >
-                                            <SelectValue placeholder="Select a recipient" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {recipients.map((recipient) => {
-                                                const recipientId =
-                                                    recipient.id.toString();
-                                                const selectedElsewhere =
-                                                    selectedRecipientIds.includes(
-                                                        recipientId,
-                                                    ) &&
-                                                    row.profit_recipient_id !==
-                                                        recipientId;
-
-                                                return (
-                                                    <SelectItem
-                                                        key={recipient.id}
-                                                        value={recipientId}
-                                                        disabled={
-                                                            selectedElsewhere ||
-                                                            (!recipient.is_active &&
-                                                                row.profit_recipient_id !==
-                                                                    recipientId)
+                                            Recipient {index + 1}
+                                        </Label>
+                                        {unavailableRecipient && (
+                                            <div className="rounded-md border border-amber-600/30 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-300">
+                                                <p className="font-medium">
+                                                    {
+                                                        unavailableRecipient.display_name
+                                                    }{' '}
+                                                    ·{' '}
+                                                    {unavailableRecipient.code}{' '}
+                                                    ·{' '}
+                                                    {unavailableRecipient.type}
+                                                </p>
+                                                {unavailableRecipient.investor && (
+                                                    <p className="mt-1">
+                                                        Linked Investor:{' '}
+                                                        {
+                                                            unavailableRecipient
+                                                                .investor.name
                                                         }
-                                                    >
-                                                        {recipient.display_name}{' '}
-                                                        · {recipient.code}
-                                                        {!recipient.is_active
-                                                            ? ' (inactive)'
-                                                            : ''}
-                                                    </SelectItem>
-                                                );
-                                            })}
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError
-                                        message={
-                                            errors[
-                                                `allocations.${index}.profit_recipient_id`
-                                            ]
-                                        }
-                                    />
-                                </div>
-
-                                <div className="grid gap-2">
-                                    <Label
-                                        htmlFor={`allocation-percentage-${row.key}`}
-                                    >
-                                        Percentage
-                                    </Label>
-                                    <div className="relative">
-                                        <Input
-                                            id={`allocation-percentage-${row.key}`}
-                                            name={`allocations[${index}][percentage]`}
-                                            value={row.percentage}
-                                            onChange={(event) =>
+                                                    </p>
+                                                )}
+                                                <p className="mt-1">
+                                                    This existing allocation is
+                                                    unchanged. Select an
+                                                    available replacement before
+                                                    saving.
+                                                </p>
+                                            </div>
+                                        )}
+                                        <input
+                                            type="hidden"
+                                            name={`allocations[${index}][profit_recipient_id]`}
+                                            value={row.profit_recipient_id}
+                                        />
+                                        <Select
+                                            value={
+                                                currentRecipient?.is_available
+                                                    ? row.profit_recipient_id
+                                                    : undefined
+                                            }
+                                            onValueChange={(value) =>
                                                 updateRow(row.key, {
-                                                    percentage:
-                                                        event.target.value,
+                                                    profit_recipient_id: value,
                                                 })
                                             }
-                                            inputMode="decimal"
-                                            placeholder="0.0000"
-                                            className="pr-8 font-mono"
-                                        />
-                                        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
-                                            %
-                                        </span>
-                                    </div>
-                                    <InputError
-                                        message={
-                                            errors[
-                                                `allocations.${index}.percentage`
-                                            ]
-                                        }
-                                    />
-                                </div>
+                                        >
+                                            <SelectTrigger
+                                                id={`allocation-recipient-${row.key}`}
+                                                className="w-full"
+                                            >
+                                                <SelectValue placeholder="Select an available recipient" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {recipients
+                                                    .filter(
+                                                        (recipient) =>
+                                                            recipient.is_available,
+                                                    )
+                                                    .map((recipient) => {
+                                                        const recipientId =
+                                                            recipient.id.toString();
+                                                        const selectedElsewhere =
+                                                            selectedRecipientIds.includes(
+                                                                recipientId,
+                                                            ) &&
+                                                            row.profit_recipient_id !==
+                                                                recipientId;
 
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="icon"
-                                    onClick={() => removeRow(row.key)}
-                                    aria-label={`Remove allocation ${index + 1}`}
-                                >
-                                    <Trash2 />
-                                </Button>
-                            </div>
-                        ))}
+                                                        return (
+                                                            <SelectItem
+                                                                key={
+                                                                    recipient.id
+                                                                }
+                                                                value={
+                                                                    recipientId
+                                                                }
+                                                                disabled={
+                                                                    selectedElsewhere
+                                                                }
+                                                            >
+                                                                {
+                                                                    recipient.display_name
+                                                                }{' '}
+                                                                ·{' '}
+                                                                {recipient.code}
+                                                            </SelectItem>
+                                                        );
+                                                    })}
+                                            </SelectContent>
+                                        </Select>
+                                        <InputError
+                                            message={
+                                                errors[
+                                                    `allocations.${index}.profit_recipient_id`
+                                                ]
+                                            }
+                                        />
+                                    </div>
+
+                                    <div className="grid gap-2">
+                                        <Label
+                                            htmlFor={`allocation-percentage-${row.key}`}
+                                        >
+                                            Percentage
+                                        </Label>
+                                        <div className="relative">
+                                            <Input
+                                                id={`allocation-percentage-${row.key}`}
+                                                name={`allocations[${index}][percentage]`}
+                                                value={row.percentage}
+                                                onChange={(event) =>
+                                                    updateRow(row.key, {
+                                                        percentage:
+                                                            event.target.value,
+                                                    })
+                                                }
+                                                inputMode="decimal"
+                                                placeholder="0.0000"
+                                                className="pr-8 font-mono"
+                                            />
+                                            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
+                                                %
+                                            </span>
+                                        </div>
+                                        <InputError
+                                            message={
+                                                errors[
+                                                    `allocations.${index}.percentage`
+                                                ]
+                                            }
+                                        />
+                                    </div>
+
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => removeRow(row.key)}
+                                        aria-label={`Remove allocation ${index + 1}`}
+                                    >
+                                        <Trash2 />
+                                    </Button>
+                                </div>
+                            );
+                        })}
                     </div>
 
                     <div className="flex flex-col justify-between gap-3 sm:flex-row">
@@ -287,13 +341,7 @@ export default function AllocationEditor({
                             <Plus />
                             Add recipient
                         </Button>
-                        <Button
-                            disabled={
-                                processing ||
-                                rows.length === 0 ||
-                                hasInactiveSelection
-                            }
-                        >
+                        <Button disabled={processing || rows.length === 0}>
                             {processing ? 'Saving…' : 'Save allocations'}
                         </Button>
                     </div>

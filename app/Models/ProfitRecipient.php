@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\ProfitRecipientType;
 use Database\Factories\ProfitRecipientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,6 +16,42 @@ class ProfitRecipient extends Model
 {
     /** @use HasFactory<ProfitRecipientFactory> */
     use HasFactory;
+
+    /**
+     * @param  Builder<ProfitRecipient>  $query
+     * @return Builder<ProfitRecipient>
+     */
+    public function scopeAvailableForAllocation(Builder $query): Builder
+    {
+        return $query
+            ->where('is_active', true)
+            ->where(
+                static function (Builder $query): void {
+                    $query
+                        ->where(
+                            static function (Builder $query): void {
+                                $query
+                                    ->where(
+                                        'type',
+                                        ProfitRecipientType::Company->value
+                                    )
+                                    ->whereNull('investor_id');
+                            }
+                        )
+                        ->orWhere(
+                            static function (Builder $query): void {
+                                $query
+                                    ->where(
+                                        'type',
+                                        ProfitRecipientType::Investor->value
+                                    )
+                                    ->whereNotNull('investor_id')
+                                    ->whereHas('investor');
+                            }
+                        );
+                }
+            );
+    }
 
     /** @return BelongsTo<Investor, $this> */
     public function investor(): BelongsTo

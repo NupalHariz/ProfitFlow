@@ -8,6 +8,7 @@ use App\Exceptions\ProfitSchemes\InvalidProfitScheme;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\ProfitSchemes\IndexProfitSchemeRequest;
 use App\Http\Requests\ProfitSchemes\StoreProfitSchemeRequest;
+use App\Models\ProfitRecipient;
 use App\Models\ProfitScheme;
 use App\Models\ProfitSchemeAllocation;
 use App\Models\ProfitSchemeVersion;
@@ -189,6 +190,27 @@ class ProfitSchemeController extends Controller
                 ->orderBy('id'),
             'versions.allocations.recipient:id,code,display_name,type,is_active',
         ]);
+        $allocationRecipientIds = $scheme->versions
+            ->flatMap(
+                fn (ProfitSchemeVersion $version) => $version
+                    ->allocations
+                    ->pluck('profit_recipient_id')
+            )
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+        $availableRecipientLookup = $allocationRecipientIds === []
+            ? []
+            : array_fill_keys(
+                ProfitRecipient::query()
+                    ->availableForAllocation()
+                    ->whereIn('id', $allocationRecipientIds)
+                    ->pluck('id')
+                    ->map(static fn (mixed $id): int => (int) $id)
+                    ->all(),
+                true
+            );
 
         return Inertia::render('profit-schemes/show', [
             'scheme' => [
@@ -206,7 +228,10 @@ class ProfitSchemeController extends Controller
                     ->map(
                         fn (
                             ProfitSchemeVersion $version
-                        ): array => $this->versionData($version)
+                        ): array => $this->versionData(
+                            $version,
+                            $availableRecipientLookup
+                        )
                     )
                     ->values()
                     ->all(),
@@ -215,10 +240,13 @@ class ProfitSchemeController extends Controller
     }
 
     /**
+     * @param  array<int, true>  $availableRecipientLookup
      * @return array<string, mixed>
      */
-    private function versionData(ProfitSchemeVersion $version): array
-    {
+    private function versionData(
+        ProfitSchemeVersion $version,
+        array $availableRecipientLookup
+    ): array {
         $published = $version->published_at !== null;
         $historicallyReferenced = (int) $version->getAttribute(
             'applied_transaction_items_count'
@@ -228,10 +256,10 @@ class ProfitSchemeController extends Controller
                 $this->allocationPercentage($allocation)
             )
         );
-        $allRecipientsActive = $version->allocations->every(
-            fn (ProfitSchemeAllocation $allocation): bool => $allocation
-                ->recipient
-                ->is_active
+        $allRecipientsAvailable = $version->allocations->every(
+            fn (ProfitSchemeAllocation $allocation): bool => isset(
+                $availableRecipientLookup[$allocation->profit_recipient_id]
+            )
         );
 
         return [
@@ -275,7 +303,7 @@ class ProfitSchemeController extends Controller
             'is_ready_to_publish' => ! $published
                 && ! $historicallyReferenced
                 && $version->is_active
-                && $allRecipientsActive
+                && $allRecipientsAvailable
                 && $allocationTotalUnits
                     === FixedDecimal::PERCENTAGE_TOTAL_UNITS,
             'allocations' => $version->allocations
@@ -299,6 +327,11 @@ class ProfitSchemeController extends Controller
                             'is_active' => $allocation
                                 ->recipient
                                 ->is_active,
+                            'is_available_for_allocation' => isset(
+                                $availableRecipientLookup[
+                                    $allocation->profit_recipient_id
+                                ]
+                            ),
                         ],
                     ]
                 )

@@ -97,6 +97,23 @@ class ProfitRuleResolverTest extends TestCase
         $this->assertNull($this->resolve());
     }
 
+    public function test_published_version_remains_resolvable_after_its_recipient_is_deactivated(): void
+    {
+        $rule = $this->createRule();
+        $recipient = $rule->allocations()
+            ->firstOrFail()
+            ->recipient()
+            ->firstOrFail();
+        $recipient->update(['is_active' => false]);
+
+        $this->assertRuleResolved($rule);
+        $this->assertDatabaseHas('profit_scheme_allocations', [
+            'profit_scheme_version_id' => $rule->id,
+            'profit_recipient_id' => $recipient->id,
+            'percentage' => '100.0000',
+        ]);
+    }
+
     public function test_effective_start_boundary_is_inclusive(): void
     {
         $rule = $this->createRule([

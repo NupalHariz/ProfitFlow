@@ -178,7 +178,12 @@ class ProfitSchemeManagementTest extends ProfitSchemeHttpTestCase
                                 'display_name',
                                 'type',
                                 'is_active',
+                                'is_available_for_allocation',
                             ])
+                            ->where(
+                                'is_available_for_allocation',
+                                true
+                            )
                     )
             );
     }

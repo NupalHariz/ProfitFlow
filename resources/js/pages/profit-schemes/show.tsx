@@ -19,6 +19,7 @@ type RecipientSummary = {
     display_name: string;
     type: string;
     is_active: boolean;
+    is_available_for_allocation: boolean;
 };
 
 type VersionData = {
@@ -325,8 +326,9 @@ function VersionCard({
                                             <p className="font-mono text-xs text-muted-foreground">
                                                 {allocation.recipient.code} ·{' '}
                                                 {allocation.recipient.type}
-                                                {!allocation.recipient.is_active
-                                                    ? ' · inactive'
+                                                {!allocation.recipient
+                                                    .is_available_for_allocation
+                                                    ? ' · unavailable for new draft allocations'
                                                     : ''}
                                             </p>
                                         </div>

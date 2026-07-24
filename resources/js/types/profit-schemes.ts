@@ -18,6 +18,12 @@ export type ProfitRecipientLookup = {
     display_name: string;
     type: string;
     is_active: boolean;
+    is_available: boolean;
+    investor: {
+        id: number;
+        name: string;
+        is_active: boolean;
+    } | null;
 };
 
 export type ProfitSchemeAllocation = {

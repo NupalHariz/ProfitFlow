@@ -147,7 +147,7 @@ class PublishProfitSchemeVersionTest extends ProfitSchemeActionTestCase
         $recipient->update(['is_active' => false]);
 
         $this->expectException(InvalidProfitSchemeAllocation::class);
-        $this->expectExceptionMessage('inactive');
+        $this->expectExceptionMessage('no longer available');
 
         $this->publish($version);
     }

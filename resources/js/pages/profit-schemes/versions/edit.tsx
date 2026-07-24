@@ -28,6 +28,7 @@ type PageProps = {
     version: ProfitSchemeVersionFormData;
     categories: ProfitSchemeCategoryLookup[];
     recipients: ProfitRecipientLookup[];
+    allocation_recipients: ProfitRecipientLookup[];
     lookup_limit: number;
 };
 
@@ -36,6 +37,7 @@ export default function EditProfitSchemeVersion({
     version,
     categories,
     recipients,
+    allocation_recipients,
     lookup_limit,
 }: PageProps) {
     const ruleForm = ProfitSchemeVersionController.update.form({
@@ -49,18 +51,20 @@ export default function EditProfitSchemeVersion({
     const currentTotal = percentageTotal(
         version.allocations.map((allocation) => allocation.percentage),
     );
-    const containsInactiveRecipient = version.allocations.some((allocation) => {
-        const recipient = recipients.find(
-            (candidate) => candidate.id === allocation.profit_recipient_id,
-        );
+    const containsUnavailableRecipient = version.allocations.some(
+        (allocation) => {
+            const recipient = allocation_recipients.find(
+                (candidate) => candidate.id === allocation.profit_recipient_id,
+            );
 
-        return recipient !== undefined && !recipient.is_active;
-    });
+            return recipient === undefined || !recipient.is_available;
+        },
+    );
     const canPublish =
         version.can_edit &&
         version.is_active &&
         currentTotal.state === 'ready' &&
-        !containsInactiveRecipient;
+        !containsUnavailableRecipient;
 
     return (
         <>
@@ -154,11 +158,12 @@ export default function EditProfitSchemeVersion({
                                 method={allocationForm.method}
                                 allocations={version.allocations}
                                 recipients={recipients}
+                                allocationRecipients={allocation_recipients}
                             />
                         ) : (
                             <ReadOnlyAllocations
                                 allocations={version.allocations}
-                                recipients={recipients}
+                                recipients={allocation_recipients}
                                 total={version.allocation_total}
                             />
                         )}
@@ -168,9 +173,10 @@ export default function EditProfitSchemeVersion({
                 {version.can_edit && (
                     <p className="text-xs text-muted-foreground">
                         Recipient choices are currently a bounded list of up to{' '}
-                        {lookup_limit} active records plus already selected
-                        recipients. Server-side searchable selection is the
-                        planned scaling path.
+                        {lookup_limit} available records. Existing unavailable
+                        allocations are shown separately for context.
+                        Server-side searchable selection is the planned scaling
+                        path.
                     </p>
                 )}
             </div>
@@ -216,10 +222,16 @@ function ReadOnlyAllocations({
                                 </p>
                                 <p className="font-mono text-xs text-muted-foreground">
                                     {recipient?.code ?? 'Unavailable'}
-                                    {recipient && !recipient.is_active
-                                        ? ' · inactive'
+                                    {recipient && !recipient.is_available
+                                        ? ' · currently unavailable for draft allocation'
                                         : ''}
                                 </p>
+                                {recipient?.investor && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Linked Investor:{' '}
+                                        {recipient.investor.name}
+                                    </p>
+                                )}
                             </div>
                             <p className="font-mono text-sm font-semibold">
                                 {allocation.percentage}%

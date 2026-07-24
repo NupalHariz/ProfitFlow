@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Services\ProfitSharing;
 
+use App\Actions\ProfitRecipients\SetProfitRecipientActive;
 use App\Enums\TransactionStatus;
 use App\Exceptions\Transactions\InvalidProfitDistribution;
 use App\Exceptions\Transactions\TransactionDistributionNotProcessable;
@@ -254,9 +255,19 @@ class ProfitDistributorTest extends ProfitDistributionTestCase
         $scheme = $frozen['version']->scheme()->firstOrFail();
         $scheme->update(['is_active' => false]);
         $frozen['recipients'][0]->update([
-            'is_active' => false,
             'display_name' => 'Current Inactive Recipient',
         ]);
+        app(SetProfitRecipientActive::class)->execute(
+            $frozen['recipients'][0],
+            ['is_active' => false]
+        );
+        $allocationBefore = ProfitSchemeAllocation::query()
+            ->where(
+                'profit_scheme_version_id',
+                $frozen['version']->id
+            )
+            ->sole()
+            ->getAttributes();
         $newer = $this->createFrozenVersion(
             ['100.0000'],
             ['version' => 2, 'priority' => 999],
@@ -278,6 +289,22 @@ class ProfitDistributorTest extends ProfitDistributionTestCase
             'Current Inactive Recipient',
             $row->recipient_name_snapshot
         );
+        $this->assertSame(
+            $frozen['recipients'][0]->id,
+            $row->profit_recipient_id
+        );
+        $this->assertSame('100.0000', $row->percentage);
+        $this->assertSame('25.00', $row->amount);
+        $this->assertSame(
+            $allocationBefore,
+            ProfitSchemeAllocation::query()
+                ->where(
+                    'profit_scheme_version_id',
+                    $frozen['version']->id
+                )
+                ->sole()
+                ->getAttributes()
+        );
 
         $frozen['recipients'][0]->update([
             'display_name' => 'Later Renamed Recipient',
@@ -286,6 +313,58 @@ class ProfitDistributorTest extends ProfitDistributionTestCase
         $this->assertSame(
             'Current Inactive Recipient',
             $row->fresh()?->recipient_name_snapshot
+        );
+    }
+
+    public function test_later_transaction_resolves_and_distributes_a_published_allocation_after_recipient_deactivation(): void
+    {
+        $frozen = $this->createFrozenVersion(['100.0000']);
+        $recipient = $frozen['recipients'][0];
+        $allocationBefore = ProfitSchemeAllocation::query()
+            ->where(
+                'profit_scheme_version_id',
+                $frozen['version']->id
+            )
+            ->sole()
+            ->getAttributes();
+        app(SetProfitRecipientActive::class)->execute(
+            $recipient,
+            ['is_active' => false]
+        );
+
+        $resolved = app(ProfitRuleResolver::class)->resolve(
+            '2026-07-23',
+            null,
+            '80.00'
+        );
+
+        $this->assertNotNull($resolved);
+        $this->assertSame($frozen['version']->id, $resolved->id);
+        $transaction = $this->createPendingTransaction([[
+            'profit' => '80.00',
+            'version' => $resolved,
+        ]]);
+        $item = $this->orderedItems($transaction)[0];
+
+        $this->distribute($transaction);
+
+        $distribution = ProfitDistribution::query()->sole();
+        $this->assertSame($recipient->id, $distribution->profit_recipient_id);
+        $this->assertSame('100.0000', $distribution->percentage);
+        $this->assertSame('80.00', $distribution->amount);
+        $this->assertSame(
+            $frozen['version']->id,
+            $item->fresh()?->applied_profit_scheme_version_id
+        );
+        $this->assertSame(
+            $allocationBefore,
+            ProfitSchemeAllocation::query()
+                ->where(
+                    'profit_scheme_version_id',
+                    $frozen['version']->id
+                )
+                ->sole()
+                ->getAttributes()
         );
     }
 

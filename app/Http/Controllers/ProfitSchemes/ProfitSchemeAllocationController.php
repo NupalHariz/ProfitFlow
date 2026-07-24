@@ -28,8 +28,13 @@ class ProfitSchemeAllocationController extends Controller
                 $request->allocations()
             );
         } catch (InvalidProfitSchemeAllocation $exception) {
+            $allocationIndex = $exception->allocationIndex();
+
             throw ValidationException::withMessages([
-                'allocations' => $exception->getMessage(),
+                $allocationIndex === null
+                    ? 'allocations'
+                    : "allocations.{$allocationIndex}.profit_recipient_id" => $exception
+                        ->getMessage(),
             ]);
         } catch (
             InvalidProfitSchemeVersion|ProfitSchemeVersionImmutable $exception

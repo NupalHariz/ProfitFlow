@@ -27,6 +27,8 @@ use LogicException;
 
 class ProfitSchemeVersionController extends Controller
 {
+    private const RECIPIENT_LOOKUP_LIMIT = 250;
+
     public function create(ProfitScheme $scheme): Response
     {
         return Inertia::render('profit-schemes/versions/create', [
@@ -90,6 +92,9 @@ class ProfitSchemeVersionController extends Controller
                 ->map(fn (mixed $id): int => (int) $id)
                 ->all()
         );
+        $recipientLookups = $this->recipientLookups(
+            $selectedRecipientIds
+        );
 
         return Inertia::render('profit-schemes/versions/edit', [
             'scheme' => $this->schemeSummary($scheme),
@@ -97,10 +102,9 @@ class ProfitSchemeVersionController extends Controller
             'categories' => $this->categoryLookups(
                 $version->product_category_id
             ),
-            'recipients' => $this->recipientLookups(
-                $selectedRecipientIds
-            ),
-            'lookup_limit' => 250,
+            'recipients' => $recipientLookups['available'],
+            'allocation_recipients' => $recipientLookups['current'],
+            'lookup_limit' => self::RECIPIENT_LOOKUP_LIMIT,
         ]);
     }
 
@@ -179,53 +183,163 @@ class ProfitSchemeVersionController extends Controller
      * server-side search when recipient volume materially grows.
      *
      * @param  list<int>  $selectedIds
-     * @return list<array{
-     *     id: int,
-     *     code: string,
-     *     display_name: string,
-     *     type: string,
-     *     is_active: bool
-     * }>
+     * @return array{
+     *     available: list<array<string, mixed>>,
+     *     current: list<array<string, mixed>>
+     * }
      */
     private function recipientLookups(array $selectedIds): array
     {
-        /** @var Collection<int, ProfitRecipient> $selected */
-        $selected = ProfitRecipient::query()
-            ->whereIn('id', $selectedIds)
-            ->get(['id', 'code', 'display_name', 'type', 'is_active']);
-        /** @var Collection<int, ProfitRecipient> $active */
-        $active = ProfitRecipient::query()
-            ->where('is_active', true)
+        /** @var Collection<int, ProfitRecipient> $selectedAvailable */
+        $selectedAvailable = $selectedIds === []
+            ? collect()
+            : ProfitRecipient::query()
+                ->availableForAllocation()
+                ->select($this->recipientLookupColumns())
+                ->with([
+                    'investor' => fn ($query) => $query
+                        ->select(['id', 'name', 'is_active']),
+                ])
+                ->whereIn('id', $selectedIds)
+                ->orderBy('display_name')
+                ->orderBy('id')
+                ->get();
+        $availableSelectedIds = $selectedAvailable
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+        $availableSelectedLookup = array_fill_keys(
+            $availableSelectedIds,
+            true
+        );
+        /** @var Collection<int, ProfitRecipient> $unavailableCurrent */
+        $unavailableCurrent = $selectedIds === []
+            ? collect()
+            : ProfitRecipient::query()
+                ->select($this->recipientLookupColumns())
+                ->with([
+                    'investor' => fn ($query) => $query
+                        ->select(['id', 'name', 'is_active']),
+                ])
+                ->whereIn('id', $selectedIds)
+                ->when(
+                    $availableSelectedIds !== [],
+                    fn ($query) => $query->whereNotIn(
+                        'id',
+                        $availableSelectedIds
+                    )
+                )
+                ->orderBy('display_name')
+                ->orderBy('id')
+                ->get();
+        $current = $selectedAvailable
+            ->concat($unavailableCurrent)
+            ->sortBy(
+                fn (ProfitRecipient $recipient): string => mb_strtolower(
+                    $recipient->display_name
+                )
+            );
+        $selectedAvailableOptions = $selectedAvailable
+            ->take(self::RECIPIENT_LOOKUP_LIMIT);
+        $remaining = self::RECIPIENT_LOOKUP_LIMIT
+            - $selectedAvailableOptions->count();
+        /** @var Collection<int, ProfitRecipient> $additionalAvailable */
+        $additionalAvailable = ProfitRecipient::query()
+            ->availableForAllocation()
+            ->select($this->recipientLookupColumns())
+            ->with([
+                'investor' => fn ($query) => $query
+                    ->select(['id', 'name', 'is_active']),
+            ])
             ->when(
                 $selectedIds !== [],
                 fn ($query) => $query->whereNotIn('id', $selectedIds)
             )
-            ->select(['id', 'code', 'display_name', 'type', 'is_active'])
             ->orderBy('display_name')
             ->orderBy('id')
-            ->limit(250)
+            ->limit($remaining)
             ->get();
 
-        return array_values(
-            $selected
-                ->concat($active)
-                ->unique('id')
-                ->sortBy(
-                    fn (ProfitRecipient $recipient): string => mb_strtolower(
-                        $recipient->display_name
+        $available = $selectedAvailableOptions
+            ->concat($additionalAvailable)
+            ->unique('id')
+            ->sortBy(
+                fn (ProfitRecipient $recipient): string => mb_strtolower(
+                    $recipient->display_name
+                )
+            )
+            ->map(
+                fn (ProfitRecipient $recipient): array => $this
+                    ->recipientLookupData($recipient, true)
+            )
+            ->values()
+            ->all();
+        $currentData = $current
+            ->map(
+                fn (ProfitRecipient $recipient): array => $this
+                    ->recipientLookupData(
+                        $recipient,
+                        isset($availableSelectedLookup[$recipient->id])
                     )
-                )
-                ->map(
-                    fn (ProfitRecipient $recipient): array => [
-                        'id' => $recipient->id,
-                        'code' => $recipient->code,
-                        'display_name' => $recipient->display_name,
-                        'type' => $this->recipientType($recipient->type),
-                        'is_active' => $recipient->is_active,
-                    ]
-                )
-                ->all()
-        );
+            )
+            ->values()
+            ->all();
+
+        return [
+            'available' => array_values($available),
+            'current' => array_values($currentData),
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function recipientLookupColumns(): array
+    {
+        return [
+            'id',
+            'investor_id',
+            'code',
+            'display_name',
+            'type',
+            'is_active',
+        ];
+    }
+
+    /**
+     * @return array{
+     *     id: int,
+     *     code: string,
+     *     display_name: string,
+     *     type: string,
+     *     is_active: bool,
+     *     is_available: bool,
+     *     investor: null|array{
+     *         id: int,
+     *         name: string,
+     *         is_active: bool
+     *     }
+     * }
+     */
+    private function recipientLookupData(
+        ProfitRecipient $recipient,
+        bool $available
+    ): array {
+        return [
+            'id' => $recipient->id,
+            'code' => $recipient->code,
+            'display_name' => $recipient->display_name,
+            'type' => $this->recipientType($recipient->type),
+            'is_active' => $recipient->is_active,
+            'is_available' => $available,
+            'investor' => $recipient->investor === null
+                ? null
+                : [
+                    'id' => $recipient->investor->id,
+                    'name' => $recipient->investor->name,
+                    'is_active' => $recipient->investor->is_active,
+                ],
+        ];
     }
 
     /**

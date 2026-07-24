@@ -2,9 +2,13 @@
 
 namespace Tests\Feature\Actions\ProfitSchemes;
 
+use App\Actions\ProfitRecipients\SetProfitRecipientActive;
 use App\Exceptions\ProfitSchemes\InvalidProfitSchemeAllocation;
 use App\Exceptions\ProfitSchemes\ProfitSchemeVersionImmutable;
+use App\Models\Investor;
+use App\Models\ProfitRecipient;
 use App\Models\ProfitSchemeAllocation;
+use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 
@@ -113,7 +117,7 @@ class ReplaceDraftProfitSchemeAllocationsTest extends ProfitSchemeActionTestCase
         $version = $this->createDraftVersion();
 
         $this->expectException(InvalidProfitSchemeAllocation::class);
-        $this->expectExceptionMessage('does not exist');
+        $this->expectExceptionMessage('no longer available');
 
         $this->replaceAllocations($version, [[
             'profit_recipient_id' => 999_999,
@@ -127,12 +131,169 @@ class ReplaceDraftProfitSchemeAllocationsTest extends ProfitSchemeActionTestCase
         $recipient = $this->createRecipient(active: false);
 
         $this->expectException(InvalidProfitSchemeAllocation::class);
-        $this->expectExceptionMessage('inactive');
+        $this->expectExceptionMessage('no longer available');
 
         $this->replaceAllocations($version, [[
             'profit_recipient_id' => $recipient->id,
             'percentage' => '100.0000',
         ]]);
+    }
+
+    public function test_active_company_and_active_recipient_linked_to_inactive_investor_are_accepted(): void
+    {
+        $version = $this->createDraftVersion();
+        $company = ProfitRecipient::factory()->company()->create([
+            'is_active' => true,
+        ]);
+        $inactiveInvestor = Investor::factory()->inactive()->create();
+        $investorRecipient = ProfitRecipient::factory()
+            ->for($inactiveInvestor, 'investor')
+            ->create(['is_active' => true]);
+
+        $updated = $this->replaceAllocations($version, [
+            [
+                'profit_recipient_id' => $company->id,
+                'percentage' => '40.0000',
+            ],
+            [
+                'profit_recipient_id' => $investorRecipient->id,
+                'percentage' => '60.0000',
+            ],
+        ]);
+
+        $this->assertSame(
+            [$company->id, $investorRecipient->id],
+            $updated->allocations
+                ->pluck('profit_recipient_id')
+                ->all()
+        );
+    }
+
+    public function test_recipient_linked_to_soft_deleted_investor_is_rejected_atomically(): void
+    {
+        $version = $this->createDraftVersion();
+        $existing = ProfitRecipient::factory()->company()->create();
+        $investor = Investor::factory()->create();
+        $legacyRecipient = ProfitRecipient::factory()
+            ->for($investor, 'investor')
+            ->create(['is_active' => true]);
+        $this->replaceAllocations($version, [[
+            'profit_recipient_id' => $existing->id,
+            'percentage' => '100.0000',
+        ]]);
+        $before = ProfitSchemeAllocation::query()
+            ->where('profit_scheme_version_id', $version->id)
+            ->sole()
+            ->getAttributes();
+        $investor->delete();
+
+        try {
+            $this->replaceAllocations($version, [[
+                'profit_recipient_id' => $legacyRecipient->id,
+                'percentage' => '100.0000',
+            ]]);
+            $this->fail('Expected unavailable recipient validation to fail.');
+        } catch (InvalidProfitSchemeAllocation $exception) {
+            $this->assertSame(0, $exception->allocationIndex());
+            $this->assertStringContainsString(
+                'no longer available',
+                $exception->getMessage()
+            );
+        }
+
+        $this->assertSame(
+            $before,
+            ProfitSchemeAllocation::query()
+                ->where('profit_scheme_version_id', $version->id)
+                ->sole()
+                ->getAttributes()
+        );
+    }
+
+    public function test_reactivation_restores_future_eligibility_without_modifying_existing_allocations(): void
+    {
+        $existingVersion = $this->createDraftVersion();
+        $existing = ProfitRecipient::factory()->company()->create();
+        $reactivated = $this->createRecipient(active: false);
+        $this->replaceAllocations($existingVersion, [[
+            'profit_recipient_id' => $existing->id,
+            'percentage' => '100.0000',
+        ]]);
+        $existingBefore = ProfitSchemeAllocation::query()
+            ->where('profit_scheme_version_id', $existingVersion->id)
+            ->sole()
+            ->getAttributes();
+        app(SetProfitRecipientActive::class)->execute(
+            $reactivated,
+            ['is_active' => true]
+        );
+        $newVersion = $this->createDraftVersion();
+
+        $updated = $this->replaceAllocations($newVersion, [[
+            'profit_recipient_id' => $reactivated->id,
+            'percentage' => '100.0000',
+        ]]);
+
+        $this->assertSame(
+            $reactivated->id,
+            $updated->allocations->sole()->profit_recipient_id
+        );
+        $this->assertSame(
+            $existingBefore,
+            ProfitSchemeAllocation::query()
+                ->where(
+                    'profit_scheme_version_id',
+                    $existingVersion->id
+                )
+                ->sole()
+                ->getAttributes()
+        );
+    }
+
+    public function test_draft_save_locks_version_then_available_recipients_in_deterministic_order(): void
+    {
+        $version = $this->createDraftVersion();
+        $first = ProfitRecipient::factory()->company()->create();
+        $second = $this->createRecipient();
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        $this->replaceAllocations($version, [
+            [
+                'profit_recipient_id' => $second->id,
+                'percentage' => '60.0000',
+            ],
+            [
+                'profit_recipient_id' => $first->id,
+                'percentage' => '40.0000',
+            ],
+        ]);
+        $queries = collect(DB::getQueryLog())
+            ->pluck('query')
+            ->map(static fn (string $query): string => strtolower($query));
+
+        DB::disableQueryLog();
+
+        $versionLockIndex = $queries->search(
+            static fn (string $query): bool => str_contains(
+                $query,
+                'from "profit_scheme_versions"'
+            ) && str_contains($query, 'for update')
+        );
+        $recipientLockIndex = $queries->search(
+            static fn (string $query): bool => str_contains(
+                $query,
+                'from "profit_recipients"'
+            ) && str_contains($query, 'for update')
+        );
+
+        $this->assertIsInt($versionLockIndex);
+        $this->assertIsInt($recipientLockIndex);
+        $this->assertLessThan($recipientLockIndex, $versionLockIndex);
+        $this->assertStringContainsString(
+            'order by "id" asc',
+            $queries->get($recipientLockIndex)
+        );
     }
 
     #[DataProvider('invalidPercentages')]

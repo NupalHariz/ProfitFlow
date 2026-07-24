@@ -149,7 +149,9 @@ class ProfitSchemeAllocationAndPublicationTest extends ProfitSchemeHttpTestCase
                     'percentage' => '100.0000',
                 ]],
             ])
-            ->assertSessionHasErrors('allocations');
+            ->assertSessionHasErrors(
+                'allocations.0.profit_recipient_id'
+            );
 
         $this->assertDatabaseCount('profit_scheme_allocations', 0);
     }
@@ -211,7 +213,9 @@ class ProfitSchemeAllocationAndPublicationTest extends ProfitSchemeHttpTestCase
                     'percentage' => '100.0000',
                 ]],
             ])
-            ->assertSessionHasErrors('allocations');
+            ->assertSessionHasErrors(
+                'allocations.0.profit_recipient_id'
+            );
 
         $after = ProfitSchemeAllocation::query()
             ->where('profit_scheme_version_id', $version->id)

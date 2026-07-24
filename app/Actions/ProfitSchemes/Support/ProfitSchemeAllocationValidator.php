@@ -5,7 +5,6 @@ namespace App\Actions\ProfitSchemes\Support;
 use App\Exceptions\ProfitSchemes\InvalidProfitSchemeAllocation;
 use App\Models\ProfitRecipient;
 use App\Services\ProfitSharing\FixedDecimal;
-use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
 final class ProfitSchemeAllocationValidator
@@ -28,8 +27,9 @@ final class ProfitSchemeAllocationValidator
 
         $normalized = [];
         $seenRecipientIds = [];
+        $recipientIndexes = [];
 
-        foreach ($entries as $entry) {
+        foreach ($entries as $index => $entry) {
             if (! is_array($entry)
                 || ! array_key_exists('profit_recipient_id', $entry)
                 || ! array_key_exists('percentage', $entry)) {
@@ -43,7 +43,8 @@ final class ProfitSchemeAllocationValidator
 
             if (! is_int($recipientId) || $recipientId <= 0) {
                 throw new InvalidProfitSchemeAllocation(
-                    'Allocation profit_recipient_id must be a positive integer.'
+                    'Allocation profit_recipient_id must be a positive integer.',
+                    allocationIndex: $index
                 );
             }
 
@@ -55,7 +56,8 @@ final class ProfitSchemeAllocationValidator
 
             if (isset($seenRecipientIds[$recipientId])) {
                 throw new InvalidProfitSchemeAllocation(
-                    "Allocation recipient [{$recipientId}] is duplicated."
+                    "Allocation recipient [{$recipientId}] is duplicated.",
+                    allocationIndex: $index
                 );
             }
 
@@ -83,6 +85,7 @@ final class ProfitSchemeAllocationValidator
             }
 
             $seenRecipientIds[$recipientId] = true;
+            $recipientIndexes[$recipientId] = $index;
             $normalized[] = [
                 'profit_recipient_id' => $recipientId,
                 'percentage' => FixedDecimal::formatPercentage(
@@ -92,8 +95,9 @@ final class ProfitSchemeAllocationValidator
             ];
         }
 
-        $this->assertRecipientsExistAndAreActive(
-            array_keys($seenRecipientIds)
+        $this->assertRecipientsAreAvailable(
+            array_keys($seenRecipientIds),
+            $recipientIndexes
         );
 
         return $normalized;
@@ -130,32 +134,35 @@ final class ProfitSchemeAllocationValidator
 
     /**
      * @param  list<int>  $recipientIds
+     * @param  array<int, int>  $recipientIndexes
      */
-    private function assertRecipientsExistAndAreActive(
-        array $recipientIds
+    private function assertRecipientsAreAvailable(
+        array $recipientIds,
+        array $recipientIndexes
     ): void {
         if ($recipientIds === []) {
             return;
         }
 
-        /** @var Collection<int|string, ProfitRecipient> $recipients */
-        $recipients = ProfitRecipient::query()
+        $availableRecipientIds = ProfitRecipient::query()
+            ->availableForAllocation()
             ->whereIn('id', $recipientIds)
-            ->get(['id', 'is_active'])
-            ->keyBy('id');
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->pluck('id')
+            ->map(static fn (mixed $id): int => (int) $id)
+            ->all();
+        $availableRecipientLookup = array_fill_keys(
+            $availableRecipientIds,
+            true
+        );
 
         foreach ($recipientIds as $recipientId) {
-            $recipient = $recipients->get($recipientId);
-
-            if ($recipient === null) {
+            if (! isset($availableRecipientLookup[$recipientId])) {
                 throw new InvalidProfitSchemeAllocation(
-                    "Profit recipient [{$recipientId}] does not exist."
-                );
-            }
-
-            if (! $recipient->is_active) {
-                throw new InvalidProfitSchemeAllocation(
-                    "Profit recipient [{$recipientId}] is inactive."
+                    'The selected Profit Recipient is no longer available. '
+                    .'Choose an active recipient and try again.',
+                    allocationIndex: $recipientIndexes[$recipientId] ?? null
                 );
             }
         }
